@@ -6,58 +6,97 @@
   <title>윤리 성향 진단 검사</title>
   <style>
     body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background:#f5f6f8; margin:0; padding:20px; }
-    h1 { text-align:center; }
-    .question { background:#fff; padding:15px; margin-bottom:12px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); }
-    .question p { margin:0 0 10px; font-weight:600; }
+    .page { display:none; max-width:900px; margin:0 auto; }
+    .active { display:block; }
+    h1, h2 { text-align:center; }
+    .card { background:#fff; padding:20px; margin-bottom:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.1); }
+    .question p { font-weight:600; }
     .scale label { margin-right:10px; }
-    button { display:block; margin:30px auto; padding:12px 24px; font-size:16px; }
-    #result { max-width:800px; margin:40px auto; background:#fff; padding:20px; border-radius:10px; display:none; }
-    .type { font-size:24px; font-weight:700; }
-    .nickname { font-size:20px; margin-top:10px; }
-    .desc { margin-top:15px; line-height:1.6; }
+    button { display:block; margin:30px auto; padding:12px 28px; font-size:16px; }
+    .progress { text-align:right; font-size:14px; color:#555; margin-bottom:10px; }
+    .type { font-size:26px; font-weight:800; margin-top:10px; }
+    .nickname { font-size:20px; margin-top:6px; }
+    .desc { margin-top:16px; line-height:1.7; }
+    .thinkers { margin-top:14px; padding-left:18px; }
   </style>
 </head>
 <body>
 
-<h1>윤리 성향 진단 검사</h1>
-<p style="text-align:center">각 문항에 대해 가장 가까운 정도를 선택하세요 (1~5)</p>
+<!-- 메인 페이지 -->
+<div id="page-main" class="page active">
+  <div class="card">
+    <h1>윤리 성향 진단 검사</h1>
+    <p>
+      이 검사는 <현대사회와 윤리> 수업을 위한 사전 활동으로, 
+      개인의 성격이 아니라 <strong>윤리적 판단 경향</strong>을 살펴보기 위한 도구입니다.
+      정답이나 우열은 없으며, 결과는 평가에 반영되지 않습니다.
+    </p>
+    <p>
+      검사 결과는 4개의 기준(A~D 영역)을 바탕으로 하나의 유형으로 제시되며,
+      이후 윤리 사상 학습과 토론에서 자신의 관점을 성찰하는 자료로 활용됩니다.
+    </p>
+    <button onclick="startTest()">검사 시작</button>
+  </div>
+</div>
 
-<form id="testForm"></form>
+<!-- 검사 페이지 -->
+<div id="page-test" class="page">
+  <div class="progress" id="progress"></div>
+  <form id="testForm"></form>
+  <button onclick="calculateResult()">결과 확인</button>
+</div>
 
-<button onclick="calculateResult()">결과 확인</button>
-
-<div id="result">
-  <div class="type" id="typeCode"></div>
-  <div class="nickname" id="typeName"></div>
-  <div class="desc" id="typeDesc"></div>
+<!-- 결과 페이지 -->
+<div id="page-result" class="page">
+  <div class="card">
+    <h2>검사 결과</h2>
+    <div class="type" id="typeCode"></div>
+    <div class="nickname" id="typeName"></div>
+    <div class="desc" id="typeDesc"></div>
+    <h3>이 유형과 가까운 윤리 사상가</h3>
+    <ul class="thinkers" id="typeThinkers"></ul>
+    <button onclick="location.reload()">다시 검사하기</button>
+  </div>
 </div>
 
 <script>
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function startTest(){ showPage('page-test'); }
+
 const questions = [
-  // A영역 8문항
-  ...Array.from({length:8}, (_,i)=>({text:`A영역 문항 ${i+1}`, area:'A'})),
-  // B영역 7문항
-  ...Array.from({length:7}, (_,i)=>({text:`B영역 문항 ${i+1}`, area:'B'})),
-  // C영역 8문항
-  ...Array.from({length:8}, (_,i)=>({text:`C영역 문항 ${i+1}`, area:'C'})),
-  // D영역 7문항
-  ...Array.from({length:7}, (_,i)=>({text:`D영역 문항 ${i+1}`, area:'D'}))
+  {text:'많은 사람에게 이익이 된다면 일부 개인의 권리가 제한되어도 괜찮다고 생각한다.', area:'A'},
+  {text:'어떤 행동의 옳고 그름은 그 결과가 얼마나 좋은지에 달려 있다.', area:'A'},
+  {text:'거짓말은 결과가 좋아도 옳지 않다고 생각한다.', area:'A'},
+  {text:'사회 전체의 이익을 위해 규칙을 어길 수 있다고 본다.', area:'A'},
+  {text:'개인의 자유는 사회 질서보다 우선되어야 한다.', area:'B'},
+  {text:'공동체의 안정은 개인의 선택보다 중요할 수 있다.', area:'B'},
+  {text:'사회는 개인의 삶에 최소한만 개입해야 한다.', area:'B'},
+  {text:'동물도 도덕적으로 고려되어야 한다.', area:'C'},
+  {text:'환경 보호를 위해 인간의 편의는 제한될 수 있다.', area:'C'},
+  {text:'도덕의 중심은 인간이라고 생각한다.', area:'C'},
+  {text:'부당한 법이라면 저항할 수 있다고 생각한다.', area:'D'},
+  {text:'사회 문제에는 개인이 적극적으로 개입해야 한다.', area:'D'},
+  {text:'질서 유지를 위해 행동은 신중해야 한다.', area:'D'}
 ];
 
 const form = document.getElementById('testForm');
 questions.forEach((q, idx) => {
   const div = document.createElement('div');
-  div.className = 'question';
+  div.className = 'card question';
   div.innerHTML = `<p>${idx+1}. ${q.text}</p><div class="scale">` +
     [1,2,3,4,5].map(v=>`<label><input type="radio" name="q${idx}" value="${v}" required> ${v}</label>`).join('') +
     '</div>';
   form.appendChild(div);
 });
 
+document.getElementById('progress').innerText = `총 ${questions.length}문항`;
+
 const typeDB = {
-  'PCHS': { name:'원칙적 공동체 관리자', desc:'원칙과 공동체 질서를 중시하며 안정과 책임을 중요하게 여기는 유형입니다. 칸트, 헤겔, 뒤르켐의 사상과 유사합니다.' },
-  'PCHA': { name:'책임 있는 정의 실천가', desc:'공동체의 정의를 위해 원칙적으로 행동하려는 유형입니다. 롤스, 샌델과 가깝습니다.' },
-  'RIHA': { name:'결과 중심 개인 행동가', desc:'결과와 효율, 개인의 자유를 중시하며 적극적으로 행동합니다. 벤담, 밀과 유사합니다.' }
+  'PCHS': { name:'원칙적 공동체 관리자', desc:'원칙과 공동체 질서를 중시하며 사회의 안정과 책임을 중요하게 여기는 유형입니다. 법과 제도를 도덕 질서의 핵심으로 인식하며, 급격한 변화보다는 안정적 운영을 선호합니다.', thinkers:['임마누엘 칸트','헤겔','에밀 뒤르켐'] },
+  'RIHA': { name:'결과 중심 개인 행동가', desc:'행동의 결과와 효율성을 기준으로 판단하며 개인의 자유를 중시합니다. 사회 문제에 적극 개입하려는 성향이 강하며 실천적 윤리관을 가집니다.', thinkers:['제러미 벤담','존 스튜어트 밀','존 듀이'] }
 };
 
 function calculateResult(){
@@ -65,17 +104,25 @@ function calculateResult(){
   let score = {A:0,B:0,C:0,D:0};
   questions.forEach((q,idx)=>{ score[q.area] += Number(data.get('q'+idx)); });
 
-  const A = score.A/8 >= 3 ? 'R':'P';
-  const B = score.B/7 >= 3 ? 'I':'C';
-  const C = score.C/8 >= 3 ? 'H':'E';
-  const D = score.D/7 >= 3 ? 'A':'S';
+  const A = score.A/4 >= 3 ? 'R':'P';
+  const B = score.B/3 >= 3 ? 'I':'C';
+  const C = score.C/3 >= 3 ? 'H':'E';
+  const D = score.D/3 >= 3 ? 'A':'S';
 
   const type = A+B+C+D;
-  document.getElementById('typeCode').innerText = `당신의 유형: ${type}`;
-  document.getElementById('typeName').innerText = typeDB[type]?.name || '혼합 유형';
-  document.getElementById('typeDesc').innerText = typeDB[type]?.desc || '여러 윤리적 성향이 고르게 나타나는 유형입니다.';
-  document.getElementById('result').style.display='block';
-  window.scrollTo(0,document.body.scrollHeight);
+  const dataRow = typeDB[type];
+
+  document.getElementById('typeCode').innerText = `유형 코드: ${type}`;
+  document.getElementById('typeName').innerText = dataRow?.name || '혼합 윤리 성향';
+  document.getElementById('typeDesc').innerText = dataRow?.desc || '여러 윤리적 기준이 균형적으로 나타나는 유형입니다.';
+
+  const ul = document.getElementById('typeThinkers');
+  ul.innerHTML = '';
+  (dataRow?.thinkers || []).forEach(t=>{
+    const li = document.createElement('li'); li.innerText = t; ul.appendChild(li);
+  });
+
+  showPage('page-result');
 }
 </script>
 
