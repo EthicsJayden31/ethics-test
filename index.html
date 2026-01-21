@@ -11,7 +11,7 @@
     h1, h2 { text-align:center; }
     .card { background:#fff; padding:20px; margin-bottom:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.1); }
     .question p { font-weight:600; }
-    .scale label { margin-right:10px; }
+    .scale label { display:block; margin:6px 0; }
     button { display:block; margin:30px auto; padding:12px 28px; font-size:16px; }
     .progress { text-align:right; font-size:14px; color:#555; margin-bottom:10px; }
     .type { font-size:26px; font-weight:800; margin-top:10px; }
@@ -27,13 +27,21 @@
   <div class="card">
     <h1>윤리 성향 진단 검사</h1>
     <p>
-      이 검사는 <현대사회와 윤리> 수업을 위한 사전 활동으로, 
-      개인의 성격이 아니라 <strong>윤리적 판단 경향</strong>을 살펴보기 위한 도구입니다.
-      정답이나 우열은 없으며, 결과는 평가에 반영되지 않습니다.
+      이 검사는 <현대사회와 윤리> 수업을 위한 사전 활동으로, 개인의 성격이 아니라
+      <strong>윤리적 판단 경향</strong>을 파악하기 위한 도구입니다.
     </p>
     <p>
-      검사 결과는 4개의 기준(A~D 영역)을 바탕으로 하나의 유형으로 제시되며,
-      이후 윤리 사상 학습과 토론에서 자신의 관점을 성찰하는 자료로 활용됩니다.
+      각 문항은 1점에서 5점까지의 척도로 응답합니다.
+    </p>
+    <ul>
+      <li>매우 그렇지 않다</li>
+      <li>대체로 그렇지 않다</li>
+      <li>중립</li>
+      <li>대체로 그렇다</li>
+      <li>매우 그렇다</li>
+    </ul>
+    <p>
+      정답은 없으며, 모든 문항에 응답해야 결과가 제시됩니다.
     </p>
     <button onclick="startTest()">검사 시작</button>
   </div>
@@ -43,7 +51,7 @@
 <div id="page-test" class="page">
   <div class="progress" id="progress"></div>
   <form id="testForm"></form>
-  <button onclick="calculateResult()">결과 확인</button>
+  <button id="resultBtn" onclick="calculateResult()" disabled>결과 확인</button>
 </div>
 
 <!-- 결과 페이지 -->
@@ -66,20 +74,40 @@ function showPage(id){
 }
 function startTest(){ showPage('page-test'); }
 
+const scaleText = ['매우 그렇지 않다','대체로 그렇지 않다','중립','대체로 그렇다','매우 그렇다'];
+
 const questions = [
-  {text:'많은 사람에게 이익이 된다면 일부 개인의 권리가 제한되어도 괜찮다고 생각한다.', area:'A'},
-  {text:'어떤 행동의 옳고 그름은 그 결과가 얼마나 좋은지에 달려 있다.', area:'A'},
-  {text:'거짓말은 결과가 좋아도 옳지 않다고 생각한다.', area:'A'},
-  {text:'사회 전체의 이익을 위해 규칙을 어길 수 있다고 본다.', area:'A'},
-  {text:'개인의 자유는 사회 질서보다 우선되어야 한다.', area:'B'},
-  {text:'공동체의 안정은 개인의 선택보다 중요할 수 있다.', area:'B'},
-  {text:'사회는 개인의 삶에 최소한만 개입해야 한다.', area:'B'},
-  {text:'동물도 도덕적으로 고려되어야 한다.', area:'C'},
-  {text:'환경 보호를 위해 인간의 편의는 제한될 수 있다.', area:'C'},
+  // A 결과/원칙
+  {text:'어떤 행동의 옳고 그름은 결과에 따라 판단해야 한다.', area:'A'},
+  {text:'결과가 좋다면 규칙을 어겨도 괜찮다고 생각한다.', area:'A'},
+  {text:'의무나 규칙은 결과와 무관하게 지켜져야 한다.', area:'A'},
+  {text:'도덕 판단에서 의도보다 결과가 더 중요하다.', area:'A'},
+  {text:'보편적 원칙은 상황에 따라 수정될 수 있다.', area:'A'},
+  {text:'도덕 원칙은 예외 없이 적용되어야 한다.', area:'A'},
+
+  // B 개인/공동체
+  {text:'개인의 자유는 사회 전체의 이익보다 우선한다.', area:'B'},
+  {text:'공동체의 안정은 개인의 선택보다 중요하다.', area:'B'},
+  {text:'사회 질서를 위해 개인의 자유는 제한될 수 있다.', area:'B'},
+  {text:'국가나 사회는 개인의 삶에 최소한만 개입해야 한다.', area:'B'},
+  {text:'공동선을 위해 개인의 희생이 필요할 수 있다.', area:'B'},
+  {text:'개인의 권리는 침해되어서는 안 된다.', area:'B'},
+
+  // C 인간/자연
+  {text:'동물도 인간과 마찬가지로 도덕적 고려 대상이다.', area:'C'},
+  {text:'자연은 인간의 목적을 위해 활용될 수 있다.', area:'C'},
+  {text:'환경 보호를 위해 인간의 편의는 제한되어야 한다.', area:'C'},
   {text:'도덕의 중심은 인간이라고 생각한다.', area:'C'},
-  {text:'부당한 법이라면 저항할 수 있다고 생각한다.', area:'D'},
-  {text:'사회 문제에는 개인이 적극적으로 개입해야 한다.', area:'D'},
-  {text:'질서 유지를 위해 행동은 신중해야 한다.', area:'D'}
+  {text:'미래 세대를 위해 현재 세대는 책임을 져야 한다.', area:'C'},
+  {text:'자연 그 자체에도 고유한 가치가 있다.', area:'C'},
+
+  // D 순응/실천
+  {text:'부당한 법이라면 따르지 않을 수도 있다.', area:'D'},
+  {text:'사회 문제에 개인이 적극적으로 참여해야 한다.', area:'D'},
+  {text:'질서 유지를 위해 개인의 행동은 신중해야 한다.', area:'D'},
+  {text:'도덕적 신념을 위해 위험을 감수할 수 있다.', area:'D'},
+  {text:'사회 규범을 존중하는 것이 중요하다.', area:'D'},
+  {text:'현실을 바꾸기 위한 행동이 필요하다.', area:'D'}
 ];
 
 const form = document.getElementById('testForm');
@@ -87,16 +115,27 @@ questions.forEach((q, idx) => {
   const div = document.createElement('div');
   div.className = 'card question';
   div.innerHTML = `<p>${idx+1}. ${q.text}</p><div class="scale">` +
-    [1,2,3,4,5].map(v=>`<label><input type="radio" name="q${idx}" value="${v}" required> ${v}</label>`).join('') +
+    scaleText.map((t,i)=>`<label><input type="radio" name="q${idx}" value="${i+1}" required> ${t}</label>`).join('') +
     '</div>';
   form.appendChild(div);
 });
 
 document.getElementById('progress').innerText = `총 ${questions.length}문항`;
 
+form.addEventListener('change', ()=>{
+  const answered = new Set([...form.querySelectorAll('input:checked')].map(i=>i.name));
+  document.getElementById('resultBtn').disabled = answered.size !== questions.length;
+});
+
 const typeDB = {
-  'PCHS': { name:'원칙적 공동체 관리자', desc:'원칙과 공동체 질서를 중시하며 사회의 안정과 책임을 중요하게 여기는 유형입니다. 법과 제도를 도덕 질서의 핵심으로 인식하며, 급격한 변화보다는 안정적 운영을 선호합니다.', thinkers:['임마누엘 칸트','헤겔','에밀 뒤르켐'] },
-  'RIHA': { name:'결과 중심 개인 행동가', desc:'행동의 결과와 효율성을 기준으로 판단하며 개인의 자유를 중시합니다. 사회 문제에 적극 개입하려는 성향이 강하며 실천적 윤리관을 가집니다.', thinkers:['제러미 벤담','존 스튜어트 밀','존 듀이'] }
+  'RCHS':{name:'공리적 공동체 조정자',desc:'결과와 공동선을 중시하며 사회 전체의 이익을 기준으로 판단하는 유형입니다.',thinkers:['제러미 벤담','존 스튜어트 밀']},
+  'RCHA':{name:'공리적 사회 개혁가',desc:'좋은 결과를 위해 적극적으로 사회 변화를 추구하는 유형입니다.',thinkers:['존 듀이','피터 싱어']},
+  'RCHS':{name:'공리적 질서 관리자',desc:'결과를 중시하되 사회 질서와 안정도 함께 고려합니다.',thinkers:['밀','뒤르켐']},
+  'RCHS':{name:'공리적 실천가',desc:'결과 개선을 위해 행동을 중시하는 유형입니다.',thinkers:['싱어','듀이']},
+  'PCHS':{name:'원칙적 공동체 관리자',desc:'원칙과 공동체 질서를 중시하며 안정과 책임을 강조합니다.',thinkers:['칸트','헤겔']},
+  'PCHA':{name:'원칙적 사회 참여자',desc:'도덕 원칙을 바탕으로 사회 참여를 중시합니다.',thinkers:['칸트','롤즈']},
+  'PCHS':{name:'원칙적 질서 수호자',desc:'규칙과 제도를 도덕의 핵심으로 인식합니다.',thinkers:['칸트','뒤르켐']},
+  'PCHS':{name:'원칙적 실천가',desc:'도덕 원칙을 행동으로 옮기려는 유형입니다.',thinkers:['칸트','간디']}
 };
 
 function calculateResult(){
@@ -104,10 +143,10 @@ function calculateResult(){
   let score = {A:0,B:0,C:0,D:0};
   questions.forEach((q,idx)=>{ score[q.area] += Number(data.get('q'+idx)); });
 
-  const A = score.A/4 >= 3 ? 'R':'P';
-  const B = score.B/3 >= 3 ? 'I':'C';
-  const C = score.C/3 >= 3 ? 'H':'E';
-  const D = score.D/3 >= 3 ? 'A':'S';
+  const A = score.A/6 >= 3 ? 'R':'P';
+  const B = score.B/6 >= 3 ? 'I':'C';
+  const C = score.C/6 >= 3 ? 'H':'E';
+  const D = score.D/6 >= 3 ? 'A':'S';
 
   const type = A+B+C+D;
   const dataRow = typeDB[type];
@@ -118,9 +157,7 @@ function calculateResult(){
 
   const ul = document.getElementById('typeThinkers');
   ul.innerHTML = '';
-  (dataRow?.thinkers || []).forEach(t=>{
-    const li = document.createElement('li'); li.innerText = t; ul.appendChild(li);
-  });
+  (dataRow?.thinkers || []).forEach(t=>{ const li=document.createElement('li'); li.innerText=t; ul.appendChild(li); });
 
   showPage('page-result');
 }
