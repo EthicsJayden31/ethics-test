@@ -74,7 +74,7 @@
       </ul>
     </div>
 
-    <button onclick="startTest()">검사 시작</button>
+    <button type="button" id="startBtn">검사 시작</button>
   </div>
 </div>
 
@@ -82,7 +82,7 @@
 <div id="page-test" class="page">
   <div class="progress" id="progress"></div>
   <form id="testForm"></form>
-  <button id="resultBtn" onclick="calculateResult()" disabled>결과 확인</button>
+  <button type="button" id="resultBtn" disabled>결과 확인</button>
 </div>
 
 <!-- 결과 페이지 -->
@@ -113,6 +113,9 @@ function showPage(id){
   document.getElementById(id).classList.add('active');
 }
 function startTest(){ showPage('page-test'); }
+
+document.getElementById('startBtn').addEventListener('click', startTest);
+document.getElementById('resultBtn').addEventListener('click', calculateResult);
 
 const scaleText = [
   '전혀 그렇지 않다',
@@ -305,9 +308,7 @@ function calculateResult(){
 
   document.getElementById('codeExplain').innerHTML = document.querySelector('#page-main .code-box').innerHTML;
   showPage('page-result');
-}erHTML;
-
-  showPage('page-result');
+}
 }
 </script>
 
