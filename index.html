@@ -5,69 +5,186 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>윤리 성향 진단 검사</title>
 <style>
-  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f6fa;margin:0;padding:20px}
+  :root{
+    --bg:#f5f6fa;
+    --card:#ffffff;
+    --ink:#111827;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --accent:#7c83fd;
+    --warn-bg:#fff7ed;
+    --warn-line:#fb923c;
+  }
+  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);margin:0;padding:20px;color:var(--ink)}
   .page{display:none;max-width:960px;margin:0 auto}
   .active{display:block}
-  .card{background:#ffffff;padding:24px;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.08);margin-bottom:20px}
-  h1,h2,h3{text-align:center}
-  button{display:inline-block;margin:14px 8px 0 0;padding:12px 20px;font-size:16px;border:none;border-radius:12px;background:#7c83fd;color:#fff;cursor:pointer}
+  .card{background:var(--card);padding:24px;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.08);margin-bottom:20px}
+  h1,h2,h3{text-align:center;margin:0 0 12px}
+  p{margin:10px 0}
+  button{display:inline-block;margin:14px 8px 0 0;padding:12px 20px;font-size:16px;border:none;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer}
   button:disabled{background:#c7c7c7;cursor:not-allowed}
   .btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
   .progress{text-align:right;color:#555;margin-bottom:10px}
-  .type{font-size:30px;font-weight:800;text-align:center}
-  .nickname{font-size:22px;text-align:center;margin-top:6px}
-  .notice{background:#fff7ed;border-left:6px solid #fb923c;padding:14px;margin:14px 0;border-radius:8px}
-  .code-box{background:#eef2ff;padding:16px;border-radius:10px;margin-top:16px}
-  ul{line-height:1.8}
+  .type{font-size:30px;font-weight:800;text-align:center;line-height:1.2}
+  .nickname{font-size:22px;text-align:center;margin-top:6px;font-weight:700}
+  .notice{background:var(--warn-bg);border-left:6px solid var(--warn-line);padding:14px;margin:14px 0;border-radius:10px}
+  .code-box{background:#eef2ff;padding:16px;border-radius:12px;margin-top:16px}
+  ul{line-height:1.8;margin:10px 0 0 18px}
 
-  .avatar{
-    display:flex;
-    justify-content:center;
-    margin:14px 0 6px;
-  }
-  .avatar svg{
-    width:160px;
-    height:160px;
-    filter: drop-shadow(0 6px 10px rgba(0,0,0,.10));
-  }
-  .avatar.small svg{
-    width:110px;
-    height:110px;
-  }
-  .type-card{
-    display:flex;
-    gap:14px;
-    align-items:flex-start;
-  }
-  .type-card .meta{flex:1}
+  /* avatar */
+  .avatar{display:flex;justify-content:center;margin:14px 0 6px}
+  .avatar svg{width:160px;height:160px;filter: drop-shadow(0 6px 10px rgba(0,0,0,.10))}
+  .avatar.small svg{width:110px;height:110px}
 
-  /* 메인 버전 표기 */
+  /* version */
   .version{
     position:fixed; right:14px; bottom:10px;
-    color:#9aa0a6; font-size:12px;
-    user-select:text;
+    color:#9aa0a6; font-size:12px; user-select:text;
   }
 
-  /* 1문항 페이지 UI */
+  /* 1문항 페이지 */
   .q-wrap{min-height:360px}
   .q-title{font-size:18px;font-weight:800;margin:8px 0 14px}
   .scale{margin-top:8px}
   .opt{
     display:flex; gap:10px; align-items:flex-start;
     padding:10px 12px; border-radius:12px;
-    border:1px solid #e5e7eb; margin:8px 0;
-    cursor:pointer;
-    background:#fff;
+    border:1px solid var(--line); margin:8px 0;
+    cursor:pointer; background:#fff;
   }
   .opt:hover{background:#f8fafc}
   .opt input{margin-top:3px}
-  .smallhint{color:#6b7280;font-size:13px;margin-top:6px}
-  .muted{color:#6b7280}
-  .axisbar{margin-top:10px;padding:12px;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb}
-  .axisbar h4{margin:0 0 8px 0;font-size:14px}
-  .axisrow{display:flex;gap:10px;align-items:center;margin:6px 0}
-  .pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:700}
-  .pill.gray{background:#f3f4f6;color:#374151}
+  .smallhint{color:var(--muted);font-size:13px;margin-top:6px}
+  .muted{color:var(--muted)}
+  .center{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+
+  /* ===== 결과/전체유형: 모바일 반응형 레이아웃 개선 ===== */
+  .result-header{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items:start;
+  }
+  .result-top{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* 요소별 세부 성향(시각화) */
+  .trait-grid{
+    margin-top:14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .trait-card{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    background:#fff;
+  }
+  .trait-title{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    font-weight:800;
+    margin-bottom:10px;
+  }
+  .trait-axis{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .bar{
+    position:relative;
+    height:14px;
+    border-radius:999px;
+    background:linear-gradient(90deg, rgba(124,131,253,.35), rgba(245,158,11,.35));
+    overflow:hidden;
+    border:1px solid rgba(17,24,39,.08);
+  }
+  .bar .mid{
+    position:absolute; left:50%; top:0; bottom:0; width:2px;
+    background:rgba(17,24,39,.18);
+  }
+  .bar .marker{
+    position:absolute; top:50%;
+    width:18px; height:18px;
+    border-radius:999px;
+    background:#111827;
+    transform:translate(-50%,-50%);
+    box-shadow:0 6px 12px rgba(0,0,0,.16);
+    border:2px solid #fff;
+  }
+  .barlabel{
+    display:flex;
+    justify-content:space-between;
+    margin-top:10px;
+    font-size:13px;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .barlabel span{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .hint{
+    margin-top:10px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.6;
+  }
+  .closeness{
+    margin-top:10px;
+    font-size:14px;
+    font-weight:800;
+  }
+  .tag{
+    display:inline-block;
+    font-size:12px;
+    font-weight:800;
+    padding:4px 10px;
+    border-radius:999px;
+    background:#f3f4f6;
+    color:#374151;
+  }
+  .tag.leanL{background:rgba(124,131,253,.16);color:#3730a3}
+  .tag.leanR{background:rgba(245,158,11,.16);color:#92400e}
+  .tag.mid{background:#f3f4f6;color:#374151}
+
+  /* 전체 유형 카드 */
+  .type-card{
+    display:grid;
+    grid-template-columns: 120px 1fr;
+    gap: 14px;
+    align-items:start;
+  }
+  .type-card .meta{min-width:0}
+  .type-code{font-weight:900;font-size:18px}
+  .type-name{font-weight:800;margin-top:6px}
+  .type-desc{margin-top:10px;line-height:1.8;white-space:pre-line}
+
+  /* ===== 모바일 최적화 ===== */
+  @media (max-width: 560px){
+    body{padding:14px}
+    .card{padding:16px;border-radius:14px}
+    button{width:100%;margin:10px 0 0 0}
+    .btnrow{gap:8px}
+    .type{font-size:26px}
+    .nickname{font-size:18px}
+    .avatar svg{width:132px;height:132px}
+    .trait-grid{grid-template-columns: 1fr; gap:10px}
+    .type-card{
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .avatar.small{justify-content:flex-start}
+    .avatar.small svg{width:96px;height:96px}
+    .version{right:10px;bottom:8px;font-size:11px}
+  }
 </style>
 </head>
 <body>
@@ -124,15 +241,28 @@
 <div id="page-result" class="page">
   <div class="card">
     <h2>검사 결과</h2>
-    <div class="type" id="typeCode"></div>
-    <div class="nickname" id="typeName"></div>
-    <div id="typeAvatar" class="avatar"></div>
 
-    <div id="warnBox"></div>
+    <div class="result-header">
+      <div class="result-top">
+        <div class="type" id="typeCode"></div>
+        <div class="nickname" id="typeName"></div>
+        <div id="typeAvatar" class="avatar"></div>
+        <div id="warnBox"></div>
+        <p id="typeDesc" style="line-height:1.9; white-space:pre-line; margin-top:8px;"></p>
+      </div>
 
-    <p id="typeDesc" style="line-height:1.9; white-space:pre-line;"></p>
-
-    <div class="axisbar" id="axisDetail" style="display:none;"></div>
+      <!-- (1) 요소별 세부 성향 시각화 -->
+      <div>
+        <h3 style="margin-top:8px">요소별 세부 성향</h3>
+        <div class="muted" style="text-align:center;margin-top:-6px;font-size:13px">
+          막대를 보면 <strong>어느 쪽 성향에 더 가까운지</strong> 한눈에 알 수 있어요.
+        </div>
+        <div class="trait-grid" id="traitGrid"></div>
+        <div class="hint" style="text-align:center">
+          ※ 가운데에 가까울수록 두 성향이 비슷하게 나타난 것입니다.
+        </div>
+      </div>
+    </div>
 
     <h3>관심 있어할 만한 주제</h3>
     <ul id="typeIssues"></ul>
@@ -154,7 +284,10 @@
 <div id="page-all" class="page">
   <div class="card">
     <h2>16가지 윤리 성향 유형 한눈에 보기</h2>
-    <div id="allTypes"></div>
+    <div class="muted" style="text-align:center;margin-top:-6px;font-size:13px">
+      모바일에서는 카드가 세로로 정렬됩니다.
+    </div>
+    <div id="allTypes" style="margin-top:14px"></div>
     <div class="btnrow">
       <button onclick="showPage('page-result')">결과로 돌아가기</button>
     </div>
@@ -168,7 +301,7 @@
 /* =========================
    코드 버전
 ========================= */
-const APP_VERSION = "v2.2.0 (pole-avg scoring + tie-break + easy questions)";
+const APP_VERSION = "v2.3.0 (trait-visual + mobile layout)";
 document.getElementById("versionTag").textContent = APP_VERSION;
 
 /* =========================
@@ -186,18 +319,12 @@ const scale=[
   '매우 그렇지 않다','그렇지 않다','약간 그렇지 않다','중립','약간 그렇다','그렇다','매우 그렇다'
 ];
 
-/*
-  ★중요: 질문은 “축(axis) + 극(pole)”로 고정
-  - 역채점이 필요 없도록, pole 자체로 점수를 따로 쌓고 평균을 비교합니다.
-  - 즉, P문항에 강하게 동의하면 P 점수가 올라가고, R문항에 강하게 동의하면 R 점수가 올라갑니다.
-*/
 const questions=[
   /* A: 판단 기준 (R/P) */
   {t:'결과적으로 도움이 더 크면, 그 선택은 옳다고 느낀다.', axis:'A', pole:'R'},
   {t:'규칙보다 “피해를 줄이는 것”이 더 중요하다고 생각한다.', axis:'A', pole:'R'},
   {t:'상황이 급하면, 원칙을 조금 어겨서라도 문제를 해결하는 편이 낫다.', axis:'A', pole:'R'},
   {t:'평가할 때 “의도”보다 “결과가 어땠는지”를 더 본다.', axis:'A', pole:'R'},
-
   {t:'결과가 좋아도 규칙이나 약속을 어겼다면 옳지 않다고 생각한다.', axis:'A', pole:'P'},
   {t:'사람이라면 누구나 지켜야 하는 원칙이 있다고 생각한다.', axis:'A', pole:'P'},
   {t:'옳은 행동은 상황이 달라도 흔들리면 안 된다고 생각한다.', axis:'A', pole:'P'},
@@ -208,7 +335,6 @@ const questions=[
   {t:'“내 삶은 내가 정한다”는 생각이 강한 편이다.', axis:'B', pole:'I'},
   {t:'국가나 사회가 개인의 삶에 너무 간섭하면 안 된다고 생각한다.', axis:'B', pole:'I'},
   {t:'다수가 불편하더라도 개인의 자유가 우선일 때가 있다고 생각한다.', axis:'B', pole:'I'},
-
   {t:'사회가 안전하려면 개인의 자유가 일부 제한될 수도 있다고 생각한다.', axis:'B', pole:'C'},
   {t:'공동체의 규칙을 지키는 것이 개인의 편함보다 중요할 때가 많다.', axis:'B', pole:'C'},
   {t:'전체를 위해 개인이 양보해야 하는 상황이 있다고 생각한다.', axis:'B', pole:'C'},
@@ -219,7 +345,6 @@ const questions=[
   {t:'사람의 안전과 생명이 환경보다 우선이라고 생각한다.', axis:'C', pole:'H'},
   {t:'동물이나 자연보다 사람의 필요가 더 중요할 때가 많다고 생각한다.', axis:'C', pole:'H'},
   {t:'환경을 지키는 것도 결국 사람을 위한 일이라고 생각한다.', axis:'C', pole:'H'},
-
   {t:'동물도 고통을 느낀다면 도덕적으로 고려해야 한다고 생각한다.', axis:'C', pole:'E'},
   {t:'미래 세대를 위해 지금 불편을 감수할 필요가 있다고 생각한다.', axis:'C', pole:'E'},
   {t:'자연과 생명은 사람에게 도움이 되지 않아도 소중하다고 생각한다.', axis:'C', pole:'E'},
@@ -230,7 +355,6 @@ const questions=[
   {t:'옳다고 믿으면, 눈치 보지 않고 말하거나 행동하는 편이다.', axis:'D', pole:'A'},
   {t:'문제를 발견하면 “지금 할 수 있는 행동”부터 찾는 편이다.', axis:'D', pole:'A'},
   {t:'변화를 위해 어느 정도의 갈등은 감수할 수 있다고 생각한다.', axis:'D', pole:'A'},
-
   {t:'큰 변화보다 안정과 질서를 지키는 것이 더 중요하다고 생각한다.', axis:'D', pole:'S'},
   {t:'갈등이 커질 것 같으면 신중하게 접근하는 편이다.', axis:'D', pole:'S'},
   {t:'문제는 제도 안에서 차근차근 해결하는 것이 좋다고 생각한다.', axis:'D', pole:'S'},
@@ -238,7 +362,7 @@ const questions=[
 ];
 
 /* =========================
-   16유형 DB (기존 상세 서술 유지)
+   16유형 DB
 ========================= */
 const typeDB={
   RIHA:{name:'실천적 개인 판단자',desc:'이 유형은 도덕 판단에서 행동의 결과(R)를 가장 중요한 기준으로 삼습니다. 규칙이나 전통보다 실제로 어떤 효과가 나타나는지를 중시하며, 판단의 출발점은 개인의 선택과 책임(I)에 놓여 있습니다. 도덕적 고려의 중심은 인간(H)이며, 사람들의 행복과 고통을 기준으로 상황을 해석하는 경향이 강합니다. 문제를 인식하면 생각에 그치지 않고 직접 행동(A)으로 옮기려는 태도가 뚜렷합니다. 그래서 사회 문제를 개인의 실천으로 바꿀 수 있다고 믿고, 일상 속 선택의 윤리성을 중요하게 여깁니다.',issues:['시민 참여: 개인의 행동이 사회를 바꿀 수 있는가','표현의 자유: 어디까지 허용되어야 하는가','기본소득: 개인의 선택과 사회적 책임'],thinkers:['존 스튜어트 밀','존 듀이']},
@@ -267,21 +391,10 @@ const typeDB={
 ========================= */
 function paletteByCode(code){
   const [A,B,C,D] = code.split('');
-  const pal = {
-    bg: '#EEF2FF',
-    suit: '#7C83FD',
-    accent: '#FB923C',
-    hair: '#111827',
-    skin: '#F2C9A0',
-    line: 'rgba(17,24,39,.85)',
-    item: '#22C55E'
-  };
-  if(A === 'R'){ pal.suit = '#7C83FD'; pal.bg = '#EEF2FF'; }
-  else         { pal.suit = '#F59E0B'; pal.bg = '#FFF7ED'; }
-  if(B === 'I'){ pal.accent = '#38BDF8'; }
-  else         { pal.accent = '#A78BFA'; }
-  if(C === 'H'){ pal.item = '#EF4444'; }
-  else         { pal.item = '#22C55E'; }
+  const pal = {bg:'#EEF2FF', suit:'#7C83FD', accent:'#FB923C', hair:'#111827', skin:'#F2C9A0', line:'rgba(17,24,39,.85)', item:'#22C55E'};
+  if(A === 'R'){ pal.suit = '#7C83FD'; pal.bg = '#EEF2FF'; } else { pal.suit = '#F59E0B'; pal.bg = '#FFF7ED'; }
+  if(B === 'I'){ pal.accent = '#38BDF8'; } else { pal.accent = '#A78BFA'; }
+  if(C === 'H'){ pal.item = '#EF4444'; } else { pal.item = '#22C55E'; }
   return pal;
 }
 function iconByCode(code){
@@ -363,7 +476,6 @@ function updateButtons(){
   nextBtn.disabled = currentIndex === questions.length - 1;
   const done = answers.every(v => v !== null);
   resultBtn.disabled = !done;
-
   if(currentIndex === questions.length - 1){
     nextBtn.style.display = 'none';
     resultBtn.style.display = 'inline-block';
@@ -376,11 +488,9 @@ function updateButtons(){
 function renderQuestion(){
   const q = questions[currentIndex];
   progressEl.textContent = `진행: ${currentIndex+1} / ${questions.length}`;
-
   const axisLabel = (q.axis==='A') ? 'A(결과/원칙)' :
                     (q.axis==='B') ? 'B(개인/공동체)' :
-                    (q.axis==='C') ? 'C(인간/환경·생명)' :
-                    'D(행동/안정)';
+                    (q.axis==='C') ? 'C(인간/환경·생명)' : 'D(행동/안정)';
   qMetaEl.textContent = `영역: ${axisLabel}  ·  척도: 1(매우 그렇지 않다) ~ 7(매우 그렇다)`;
   qTextEl.textContent = `${currentIndex+1}. ${q.t}`;
 
@@ -389,126 +499,139 @@ function renderQuestion(){
     const value = idx + 1;
     const row = document.createElement('label');
     row.className = 'opt';
-    row.innerHTML = `
-      <input type="radio" name="q${currentIndex}" value="${value}">
-      <div>${value}. ${label}</div>
-    `;
+    row.innerHTML = `<input type="radio" name="q${currentIndex}" value="${value}"><div>${value}. ${label}</div>`;
     const input = row.querySelector('input');
     if(answers[currentIndex] === value) input.checked = true;
-
-    input.addEventListener('change', () => {
-      answers[currentIndex] = value;
-      updateButtons();
-    });
-
+    input.addEventListener('change', () => { answers[currentIndex] = value; updateButtons(); });
     qOptionsEl.appendChild(row);
   });
 
   updateButtons();
 }
 
-prevBtn.addEventListener('click', () => {
-  if(currentIndex > 0){
-    currentIndex--;
-    renderQuestion();
-  }
-});
+prevBtn.addEventListener('click', () => { if(currentIndex > 0){ currentIndex--; renderQuestion(); }});
 nextBtn.addEventListener('click', () => {
   if(currentIndex < questions.length - 1){
-    if(answers[currentIndex] === null){
-      alert('이 문항에 먼저 응답해 주세요.');
-      return;
-    }
-    currentIndex++;
-    renderQuestion();
+    if(answers[currentIndex] === null){ alert('이 문항에 먼저 응답해 주세요.'); return; }
+    currentIndex++; renderQuestion();
   }
 });
-
-document.getElementById('startBtn').addEventListener('click', () => {
-  showPage('page-test');
-  currentIndex = 0;
-  renderQuestion();
-});
+document.getElementById('startBtn').addEventListener('click', () => { showPage('page-test'); currentIndex = 0; renderQuestion(); });
 
 /* =========================
-   결과 산출(개선판)
-   - 축별로 pole 평균 비교
-   - 동점/박빙이면 강한 동의(6~7) 개수로 타이브레이크
-   - 그래도 같으면 “평균의 미세차(부동소수)” 대신 ‘중립 회피 점수’로 보정
+   결과 산출 (pole 평균 + tie-break)
 ========================= */
-const axisPairs = {
-  A: ['R','P'],
-  B: ['I','C'],
-  C: ['H','E'],
-  D: ['A','S']
-};
+const axisPairs = { A:['R','P'], B:['I','C'], C:['H','E'], D:['A','S'] };
 
-// 강도 라벨(학생용)
-function strengthLabel(diffAbs){
-  if(diffAbs >= 1.2) return '매우 강함';
-  if(diffAbs >= 0.8) return '강함';
-  if(diffAbs >= 0.45) return '보통';
-  if(diffAbs >= 0.2) return '약함';
-  return '매우 약함(접전)';
-}
-
-function calcAxis( axisKey ){
+function calcAxis(axisKey){
   const [p1, p2] = axisPairs[axisKey];
-  const items = questions
-    .map((q, idx)=>({q, idx, v: answers[idx]}))
-    .filter(x => x.q.axis === axisKey);
-
+  const items = questions.map((q, idx)=>({q, idx, v: answers[idx]})).filter(x => x.q.axis === axisKey);
   const g1 = items.filter(x=>x.q.pole === p1);
   const g2 = items.filter(x=>x.q.pole === p2);
-
   const sum = arr => arr.reduce((a,b)=>a + b.v, 0);
   const avg = arr => (arr.length ? sum(arr)/arr.length : 0);
+  const avg1 = avg(g1), avg2 = avg(g2);
 
-  const avg1 = avg(g1);
-  const avg2 = avg(g2);
-
-  // 강한 동의(6~7) 개수: “그 방향으로 강하게 기울었는지”
   const strong = arr => arr.filter(x=>x.v >= 6).length;
-
-  // 중립(4) 회피 점수: (v-4)의 절댓값 합, “확신의 정도”
   const certainty = arr => arr.reduce((a,b)=> a + Math.abs(b.v - 4), 0);
 
-  // 1차 판정: 평균 비교
   let pick = (avg1 > avg2) ? p1 : (avg2 > avg1) ? p2 : null;
-
-  // 박빙 기준(학생들이 체감상 거의 같을 때): 평균 차이가 0.15 이하면 접전으로 처리
   const diff = avg1 - avg2;
   const close = Math.abs(diff) <= 0.15;
 
-  // 동점/접전이면 타이브레이크
   if(pick === null || close){
     const s1 = strong(g1), s2 = strong(g2);
     if(s1 !== s2) pick = (s1 > s2) ? p1 : p2;
     else{
       const c1 = certainty(g1), c2 = certainty(g2);
       if(c1 !== c2) pick = (c1 > c2) ? p1 : p2;
-      else pick = p1; // 완전 동일이면 결정 규칙(항상 타입 산출)
+      else pick = p1;
     }
   }
 
-  return {
-    axis: axisKey,
-    p1, p2,
-    avg1, avg2,
-    diff,
-    pick,
-    close,
-    strength: strengthLabel(Math.abs(diff))
-  };
+  return { axis: axisKey, p1, p2, avg1, avg2, diff, pick, close };
 }
 
+/* =========================
+   (1) 요소별 세부 성향 시각화
+   - 숫자 대신: "왼쪽/중간/오른쪽" 라벨
+   - 막대 포인터는 0~100 위치로 표시
+========================= */
+const axisMeta = {
+  A:{title:'판단 기준', left:'R(결과)', right:'P(원칙)'},
+  B:{title:'사회 관점', left:'I(개인)', right:'C(공동체)'},
+  C:{title:'도덕 대상', left:'H(인간)', right:'E(환경·생명)'},
+  D:{title:'행동 태도', left:'A(행동)', right:'S(안정)'}
+};
+
+// avg1/avg2 (1~7) -> 포인터 위치 0~100
+// diff>0이면 left(p1) 쪽, diff<0이면 right(p2) 쪽
+function markerPosFromDiff(diff){
+  // diff 범위 대략 -6 ~ +6 (실제는 평균 차이 -6~+6 이론)
+  // 완만하게: 0.0이면 50, +2면 ~75, -2면 ~25
+  const k = 12.5; // 민감도 (diff*12.5 => +-2 -> +-25)
+  const pos = 50 + diff * k;
+  return Math.max(6, Math.min(94, pos));
+}
+
+function closenessTag(diff){
+  const a = Math.abs(diff);
+  if(a <= 0.15) return {txt:'중간(비슷함)', cls:'mid'};
+  if(a <= 0.45) return {txt:'조금 더 가까움', cls:(diff>0?'leanL':'leanR')};
+  if(a <= 0.8)  return {txt:'꽤 가까움', cls:(diff>0?'leanL':'leanR')};
+  return {txt:'많이 가까움', cls:(diff>0?'leanL':'leanR')};
+}
+
+function renderTraits(axisResults){
+  const grid = document.getElementById('traitGrid');
+  grid.innerHTML = '';
+
+  axisResults.forEach(res=>{
+    const meta = axisMeta[res.axis];
+    const pos = markerPosFromDiff(res.diff);
+    const tag = closenessTag(res.diff);
+
+    // 접근성: aria-label에만 수치 정보를 남김(학생 화면에는 숫자 노출 최소)
+    const aria = `${meta.title}: ${meta.left} 평균 ${res.avg1.toFixed(2)}, ${meta.right} 평균 ${res.avg2.toFixed(2)}. 차이 ${res.diff.toFixed(2)}`;
+
+    const card = document.createElement('div');
+    card.className = 'trait-card';
+    card.innerHTML = `
+      <div class="trait-title">
+        <div>${meta.title} <span class="trait-axis">(${meta.left} ↔ ${meta.right})</span></div>
+        <span class="tag ${tag.cls}">${tag.txt}</span>
+      </div>
+
+      <div class="bar" role="img" aria-label="${aria}">
+        <div class="mid"></div>
+        <div class="marker" style="left:${pos}%"></div>
+      </div>
+
+      <div class="barlabel">
+        <span>← ${meta.left}</span>
+        <span>${meta.right} →</span>
+      </div>
+
+      <div class="closeness">
+        ${res.diff > 0.15 ? `${meta.left} 쪽에 더 가까움` :
+           res.diff < -0.15 ? `${meta.right} 쪽에 더 가까움` :
+           `두 성향이 비슷함`}
+      </div>
+      <div class="hint">가까움은 “두 성향 평균의 차이”를 바탕으로 정성적으로 표시됩니다.</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* =========================
+   결과 계산 + 렌더링
+========================= */
 function calculateResult(){
   if(!answers.every(v => v !== null)){
     alert('모든 문항에 응답해야 결과를 확인할 수 있습니다.');
     return;
   }
 
-  // 축별 계산
   const aRes = calcAxis('A');
   const bRes = calcAxis('B');
   const cRes = calcAxis('C');
@@ -522,16 +645,15 @@ function calculateResult(){
   setAvatar(document.getElementById('typeAvatar'), code, false);
   document.getElementById('typeDesc').textContent = data.desc;
 
-  // 경고/안내 박스
+  // 경고
   const warn = document.getElementById('warnBox');
   warn.innerHTML = '';
-
   const neutral = answers.filter(v=>v===4).length;
   const maxSame = Math.max(...[1,2,3,4,5,6,7].map(n => answers.filter(v=>v===n).length));
   if(neutral/answers.length >= 0.33) warn.innerHTML += '<div class="notice">중립(4) 응답이 많은 편입니다. 일부 문항은 조금 더 생각해 보고 다시 해도 좋아요.</div>';
   if(maxSame/answers.length >= 0.66) warn.innerHTML += '<div class="notice">같은 번호 선택이 많이 반복되었습니다. 결과가 실제 생각과 다를 수 있어요. 가능하면 다시 응답해 보세요.</div>';
 
-  // “접전 축” 안내(학생에게 재검토 유도)
+  // 접전 축 안내(선택 유지)
   const closeAxes = [aRes,bRes,cRes,dRes].filter(x=>x.close);
   if(closeAxes.length){
     const txt = closeAxes.map(x=>{
@@ -541,34 +663,15 @@ function calculateResult(){
     warn.innerHTML += `<div class="notice">${txt} 이 축의 문항을 다시 읽어보고 “내 생각에 더 가까운 쪽”으로 답했는지 확인해 보세요.</div>`;
   }
 
-  // 축별 강도 표시(요청사항 1: “같은 점수라도 어느 쪽이 더 강한지” 보여주기)
-  const axisDetail = document.getElementById('axisDetail');
-  axisDetail.style.display = 'block';
-  axisDetail.innerHTML = `
-    <h4>축별 결과(강도 포함)</h4>
-    <div class="axisrow"><span class="pill">A</span> ${aRes.pick} (${aRes.strength}) <span class="pill gray">평균</span> ${aRes.p1}:${aRes.avg1.toFixed(2)} / ${aRes.p2}:${aRes.avg2.toFixed(2)}</div>
-    <div class="axisrow"><span class="pill">B</span> ${bRes.pick} (${bRes.strength}) <span class="pill gray">평균</span> ${bRes.p1}:${bRes.avg1.toFixed(2)} / ${bRes.p2}:${bRes.avg2.toFixed(2)}</div>
-    <div class="axisrow"><span class="pill">C</span> ${cRes.pick} (${cRes.strength}) <span class="pill gray">평균</span> ${cRes.p1}:${cRes.avg1.toFixed(2)} / ${cRes.p2}:${cRes.avg2.toFixed(2)}</div>
-    <div class="axisrow"><span class="pill">D</span> ${dRes.pick} (${dRes.strength}) <span class="pill gray">평균</span> ${dRes.p1}:${dRes.avg1.toFixed(2)} / ${dRes.p2}:${dRes.avg2.toFixed(2)}</div>
-    <div class="muted" style="margin-top:8px;font-size:13px">※ “강도”는 두 성향 평균 차이로 계산되며, 값이 작으면(접전) 두 성향이 비슷하다는 뜻입니다.</div>
-  `;
+  // 요소별 세부 성향(시각화) 렌더
+  renderTraits([aRes,bRes,cRes,dRes]);
 
-  // 주제/사상가 렌더링
-  const ulI = document.getElementById('typeIssues');
-  ulI.innerHTML = '';
-  data.issues.forEach(i => {
-    const li = document.createElement('li');
-    li.textContent = i;
-    ulI.appendChild(li);
-  });
+  // 주제/사상가
+  const ulI = document.getElementById('typeIssues'); ulI.innerHTML = '';
+  data.issues.forEach(i => { const li=document.createElement('li'); li.textContent=i; ulI.appendChild(li); });
 
-  const ulT = document.getElementById('typeThinkers');
-  ulT.innerHTML = '';
-  data.thinkers.forEach(t => {
-    const li = document.createElement('li');
-    li.textContent = t;
-    ulT.appendChild(li);
-  });
+  const ulT = document.getElementById('typeThinkers'); ulT.innerHTML = '';
+  data.thinkers.forEach(t => { const li=document.createElement('li'); li.textContent=t; ulT.appendChild(li); });
 
   // 코드 설명 복사
   document.getElementById('codeExplain').innerHTML =
@@ -576,11 +679,10 @@ function calculateResult(){
 
   showPage('page-result');
 }
-
-resultBtn.addEventListener('click', calculateResult);
+document.getElementById('resultBtn').addEventListener('click', calculateResult);
 
 /* =========================
-   전체 유형 페이지 (오류/중복 제거 버전)
+   전체 유형 페이지 (모바일 반응형 카드)
 ========================= */
 const all = document.getElementById('allTypes');
 function renderAllTypes(){
@@ -597,19 +699,15 @@ function renderAllTypes(){
     meta.className = 'meta';
 
     const codeEl = document.createElement('div');
-    codeEl.style.fontWeight = '800';
-    codeEl.style.fontSize = '18px';
+    codeEl.className = 'type-code';
     codeEl.textContent = k;
 
     const nameEl = document.createElement('div');
-    nameEl.style.fontWeight = '700';
-    nameEl.style.marginTop = '6px';
+    nameEl.className = 'type-name';
     nameEl.textContent = v.name;
 
     const descEl = document.createElement('p');
-    descEl.style.marginTop = '10px';
-    descEl.style.lineHeight = '1.8';
-    descEl.style.whiteSpace = 'pre-line';
+    descEl.className = 'type-desc';
     descEl.textContent = v.desc;
 
     meta.appendChild(codeEl);
