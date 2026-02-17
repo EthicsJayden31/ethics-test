@@ -306,29 +306,30 @@
 ========================= */
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImOT1XpsFogJdFXYrXY14q3Cq3hEn1YuTwAJWoD8DSiir9092y_8JAkg/exec";
 
-async function submitResult(payloadObj){
-  // payloadObj는 {version, code, A_side, ...} 형태라고 가정
+function sendResultToGAS(payloadObj){
   const body = new URLSearchParams();
   body.set("payload", JSON.stringify(payloadObj));
 
-  try{
-    // ✅ preflight 회피: form + no-cors
-    await fetch(GAS_WEBAPP_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-      },
-      body
-    });
-
-    // no-cors에서는 응답 확인이 불가(opaque) -> "전송 시도 성공"으로 처리
-    return true;
-  }catch(e){
-    console.error(e);
-    return false;
+  // ✅ 1) sendBeacon 우선 (가장 안정적)
+  if (navigator.sendBeacon) {
+    const ok = navigator.sendBeacon(
+      GAS_WEBAPP_URL,
+      new Blob([body.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" })
+    );
+    return ok; // true/false
   }
+
+  // ✅ 2) fallback: no-cors fetch (응답 읽지 말 것!)
+  fetch(GAS_WEBAPP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    body
+  }).catch(console.error);
+
+  return true; // fetch는 응답 확인 불가 -> "전송 시도"로 처리
 }
+
 
 /* =========================
    코드 버전
@@ -596,7 +597,7 @@ const axisMeta = {
 
 function markerPosFromDiff(diff){
   const k = 12.5;
-  const pos = 50 + diff * k;
+  const pos = 50 - diff * k;
   return Math.max(6, Math.min(94, pos));
 }
 function closenessTag(diff){
@@ -725,6 +726,16 @@ function calculateResult(){
   setAvatar(document.getElementById('typeAvatar'), code, false);
   document.getElementById('typeDesc').textContent = data.desc;
 
+  lastResult = {
+  code,
+  A_side: aRes.pick, A_strength: aRes.diff,
+  B_side: bRes.pick, B_strength: bRes.diff,
+  C_side: cRes.pick, C_strength: cRes.diff,
+  D_side: dRes.pick, D_strength: dRes.diff,
+  neutral_rate: neutral/answers.length,
+  max_same_rate: maxSame/answers.length
+};
+  
   // ✅ (추가) 제출용 payload 저장
   lastResultPayload = {
     typeCode: code,
