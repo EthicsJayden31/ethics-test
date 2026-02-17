@@ -314,13 +314,12 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImO
 /* =========================
    ✅ 코드 버전 (여기만 올리면 화면에도 바로 표시됩니다)
 ========================= */
-const APP_VERSION = "v2.3.2 (fix: version display + result button enable)";
+const APP_VERSION = "v2.3.3";
 
 /* ✅ 버전 표기 강제 갱신 */
 (function(){
   const vEl = document.getElementById("versionTag");
-  const cacheHint = `${location.pathname}?v=${encodeURIComponent(APP_VERSION)}`;
-  vEl.textContent = `${APP_VERSION} · 캐시 확인용: ${cacheHint}`;
+  vEl.textContent = APP_VERSION;
 })();
 
 /* =========================
@@ -630,7 +629,7 @@ function calcAxis(axisKey){
 
 /* =========================
    요소별 세부 성향 시각화
-   ✅ 현재 코드 기준(diff>0 => 왼쪽(p1) 쪽) 이므로 markerPos는 50 + diff*k
+   ✅ diff>0 이면 왼쪽(p1) 쪽으로 이동해야 하므로 markerPos는 50 - diff*k
 ========================= */
 const axisMeta = {
   A:{title:'판단 기준', left:'R(결과)', right:'P(원칙)'},
@@ -641,7 +640,7 @@ const axisMeta = {
 
 function markerPosFromDiff(diff){
   const k = 12.5;
-  const pos = 50 + diff * k;
+  const pos = 50 - diff * k;
   return Math.max(6, Math.min(94, pos));
 }
 function closenessTag(diff){
