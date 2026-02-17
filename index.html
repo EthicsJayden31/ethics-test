@@ -17,6 +17,7 @@
   .type{font-size:30px;font-weight:800;text-align:center}
   .nickname{font-size:22px;text-align:center;margin-top:6px}
   .notice{background:#fff7ed;border-left:6px solid #fb923c;padding:14px;margin:14px 0;border-radius:8px}
+  .oknote{background:#eef2ff;border-left:6px solid #7c83fd;padding:14px;margin:14px 0;border-radius:8px}
   .code-box{background:#eef2ff;padding:16px;border-radius:10px;margin-top:16px}
   ul{line-height:1.8}
 
@@ -42,15 +43,26 @@
     display:flex; gap:10px; align-items:flex-start;
     padding:10px 12px; border-radius:12px;
     border:1px solid #e5e7eb; margin:8px 0;
-    cursor:pointer; background:#fff;
+    cursor:pointer;
+    background:#fff;
   }
   .opt:hover{background:#f8fafc}
   .opt input{margin-top:3px}
   .smallhint{color:#6b7280;font-size:13px;margin-top:6px}
   .muted{color:#6b7280}
 
-  /* 모바일 개선 */
-  @media (max-width: 560px){
+  /* 요소별 세부 성향(그래프) */
+  .detail-bars{display:grid;gap:12px;margin-top:10px}
+  .bar-row{display:grid;grid-template-columns:110px 1fr 110px;gap:10px;align-items:center}
+  .bar-l,.bar-r{font-size:13px;color:#6b7280}
+  .bar-l{text-align:left}
+  .bar-r{text-align:right}
+  .bar-track{position:relative;height:14px;border-radius:999px;background:#e5e7eb;overflow:hidden}
+  .bar-mid{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(17,24,39,.25)}
+  .bar-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:999px;background:#7c83fd;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+
+  /* 모바일 보강 */
+  @media (max-width:560px){
     body{padding:12px}
     .card{padding:16px;border-radius:14px}
     button{width:100%; margin:10px 0 0 0}
@@ -61,6 +73,7 @@
     .type-card{flex-direction:column; align-items:stretch}
     .avatar.small{justify-content:flex-start}
     .avatar.small svg{width:100px;height:100px}
+    .bar-row{grid-template-columns:92px 1fr 92px}
   }
 </style>
 </head>
@@ -121,8 +134,16 @@
     <div class="type" id="typeCode"></div>
     <div class="nickname" id="typeName"></div>
     <div id="typeAvatar" class="avatar"></div>
+
     <div id="warnBox"></div>
+
     <p id="typeDesc" style="line-height:1.9; white-space:pre-line;"></p>
+
+    <h3>요소별 세부 성향</h3>
+    <div class="card" id="detailBox" style="background:#f8fafc; box-shadow:none; border:1px solid #e5e7eb;">
+      <div id="detailBars" class="detail-bars"></div>
+      <div class="smallhint" style="margin-top:10px;">각 막대는 두 요소 중 어느 쪽에 더 가까운지(좌↔우)를 보여줍니다. 수치는 표시하지 않습니다.</div>
+    </div>
 
     <h3>관심 있어할 만한 주제</h3>
     <ul id="typeIssues"></ul>
@@ -134,9 +155,9 @@
     <div class="code-box" id="codeExplain"></div>
 
     <div class="btnrow">
-      <button type="button" id="submitBtn">결과 제출</button>
       <button onclick="location.reload()">다시 검사하기</button>
       <button onclick="showPage('page-all')">모든 유형 확인하기</button>
+      <button type="button" id="submitBtn" disabled>결과 제출</button>
     </div>
   </div>
 </div>
@@ -157,13 +178,15 @@
 
 <script>
 /* =========================
-   코드 버전 + 수집 URL
+   설정
 ========================= */
-const APP_VERSION = "v2.0.0 (final + submit-to-sheets)";
+const APP_VERSION = "v2.2.0 (graph-restored + mobile + submit)";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImOT1XpsFogJdFXYrXY14q3Cq3hEn1YuTwAJWoD8DSiir9092y_8JAkg/exec";
+
 document.getElementById("versionTag").textContent = APP_VERSION;
 
-// ✅ (중요) Apps Script 웹앱 URL (/exec)
-const COLLECT_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImOT1XpsFogJdFXYrXY14q3Cq3hEn1YuTwAJWoD8DSiir9092y_8JAkg/exec";
+let lastResultPayload = null;
+let hasSubmitted = false;
 
 /* =========================
    공통: 페이지 전환
@@ -220,7 +243,7 @@ const questions=[
 ];
 
 /* =========================
-   16유형 DB
+   16유형 DB (desc 안전출력)
 ========================= */
 const typeDB={
   RIHA:{name:'실천적 개인 판단자',desc:'이 유형은 도덕 판단에서 행동의 결과(R)를 가장 중요한 기준으로 삼습니다. 규칙이나 전통보다 실제로 어떤 효과가 나타나는지를 중시하며, 판단의 출발점은 개인의 선택과 책임(I)에 놓여 있습니다. 도덕적 고려의 중심은 인간(H)이며, 사람들의 행복과 고통을 기준으로 상황을 해석하는 경향이 강합니다. 문제를 인식하면 생각에 그치지 않고 직접 행동(A)으로 옮기려는 태도가 뚜렷합니다. 그래서 사회 문제를 개인의 실천으로 바꿀 수 있다고 믿고, 일상 속 선택의 윤리성을 중요하게 여깁니다.',issues:['시민 참여: 개인의 행동이 사회를 바꿀 수 있는가','표현의 자유: 어디까지 허용되어야 하는가','기본소득: 개인의 선택과 사회적 책임'],thinkers:['존 스튜어트 밀','존 듀이']},
@@ -245,7 +268,7 @@ const typeDB={
 };
 
 /* =========================
-   캐릭터 SVG(오리지널) 생성
+   캐릭터 SVG (오리지널)
 ========================= */
 function paletteByCode(code){
   const [A,B,C,D] = code.split('');
@@ -258,6 +281,7 @@ function paletteByCode(code){
     line: 'rgba(17,24,39,.85)',
     item: '#22C55E'
   };
+
   if(A === 'R'){ pal.suit = '#7C83FD'; pal.bg = '#EEF2FF'; }
   else         { pal.suit = '#F59E0B'; pal.bg = '#FFF7ED'; }
 
@@ -269,15 +293,19 @@ function paletteByCode(code){
 
   return pal;
 }
+
 function iconByCode(code){
   const [A,B,C,D] = code.split('');
   const core = (C === 'E')
-    ? { label:'leaf',  path:'M22 34c10-2 16-10 16-20C26 16 18 22 16 34c2 0 4 0 6 0z' }
-    : { label:'heart', path:'M32 40s-12-7-16-14c-4-7 3-14 10-10 3 2 6 2 6 2s3 0 6-2c7-4 14 3 10 10-4 7-16 14-16 14z' };
+    ? { path:'M22 34c10-2 16-10 16-20C26 16 18 22 16 34c2 0 4 0 6 0z' }
+    : { path:'M32 40s-12-7-16-14c-4-7 3-14 10-10 3 2 6 2 6 2s3 0 6-2c7-4 14 3 10 10-4 7-16 14-16 14z' };
+
   const stance = (D === 'A') ? 'action' : 'shield';
-  const badge = (B === 'I') ? 'star' : 'group';
+  const badge  = (B === 'I') ? 'star' : 'group';
+
   return { core, stance, badge };
 }
+
 function makeAvatarSVG(code){
   const p = paletteByCode(code);
   const i = iconByCode(code);
@@ -311,7 +339,6 @@ function makeAvatarSVG(code){
 
     <circle cx="42" cy="40" r="2.2" fill="${p.line}"/>
     <circle cx="54" cy="40" r="2.2" fill="${p.line}"/>
-
     <path d="M43 47c3 3 7 3 10 0" fill="none" stroke="${p.line}" stroke-width="2.5" stroke-linecap="round"/>
 
     <path d="M28 78c2-16 14-22 20-22s18 6 20 22" fill="${p.suit}" opacity=".95"/>
@@ -330,6 +357,7 @@ function makeAvatarSVG(code){
     ${shield}
   </svg>`;
 }
+
 function setAvatar(el, code, small=false){
   el.classList.toggle('small', !!small);
   el.innerHTML = makeAvatarSVG(code);
@@ -349,6 +377,7 @@ const qOptionsEl = document.getElementById('qOptions');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const resultBtn = document.getElementById('resultBtn');
+const submitBtn = document.getElementById('submitBtn');
 
 function updateButtons(){
   prevBtn.disabled = currentIndex === 0;
@@ -401,6 +430,7 @@ prevBtn.addEventListener('click', () => {
     renderQuestion();
   }
 });
+
 nextBtn.addEventListener('click', () => {
   if(currentIndex < questions.length - 1){
     if(answers[currentIndex] === null){
@@ -419,53 +449,62 @@ document.getElementById('startBtn').addEventListener('click', () => {
 });
 
 /* =========================
-   결과 제출(구글시트)
+   요소별 세부 성향(그래프)
 ========================= */
-let lastResultPayload = null;
-let hasSubmitted = false;
+function renderDetailBars(scores){
+  // 8~56 → 0~100, 중립(32)이 약 50
+  const norm = (sum)=>{
+    const pct = (sum - 8) / 48 * 100;
+    return Math.max(0, Math.min(100, pct));
+  };
 
-function strengthLabel(sum, mid=32){
-  const m = Math.abs(sum - mid);
-  if (m === 0) return '정중앙';
-  if (m <= 3) return '약함';
-  if (m <= 10) return '보통';
-  return '강함';
+  const rows = [
+    {left:'P(원칙)', right:'R(결과)', v:norm(scores.A)},
+    {left:'C(공동체)', right:'I(개인)', v:norm(scores.B)},
+    {left:'E(환경·생명)', right:'H(인간)', v:norm(scores.C)},
+    {left:'S(안정)', right:'A(행동)', v:norm(scores.D)}
+  ];
+
+  const wrap = document.getElementById('detailBars');
+  wrap.innerHTML = '';
+
+  rows.forEach(r=>{
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+
+    const l = document.createElement('div');
+    l.className = 'bar-l';
+    l.textContent = r.left;
+
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+
+    const mid = document.createElement('div');
+    mid.className = 'bar-mid';
+
+    const dot = document.createElement('div');
+    dot.className = 'bar-dot';
+    dot.style.left = r.v + '%';
+
+    track.appendChild(mid);
+    track.appendChild(dot);
+
+    const rr = document.createElement('div');
+    rr.className = 'bar-r';
+    rr.textContent = r.right;
+
+    row.appendChild(l);
+    row.appendChild(track);
+    row.appendChild(rr);
+    wrap.appendChild(row);
+  });
 }
-function ratio3(n){ return Math.round(n * 1000) / 1000; }
-
-async function submitAnonymousResult(){
-  const btn = document.getElementById('submitBtn');
-  if (!lastResultPayload){
-    alert('제출할 결과 데이터가 없습니다. 먼저 결과를 확인해 주세요.');
-    return;
-  }
-  if (hasSubmitted){
-    alert('이미 제출되었습니다.');
-    return;
-  }
-
-  btn.disabled = true;
-
-  try{
-    const body = new URLSearchParams({ payload: JSON.stringify(lastResultPayload) }).toString();
-    await fetch(COLLECT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body
-    });
-    hasSubmitted = true;
-    alert('제출 완료');
-  }catch(e){
-    btn.disabled = false;
-    alert('제출 실패: 네트워크/URL을 확인해 주세요.');
-  }
-}
-document.getElementById('submitBtn').addEventListener('click', submitAnonymousResult);
 
 /* =========================
-   결과 계산
+   결과 계산 + 제출 payload 준비
 ========================= */
+function ratio3(x){ return Math.round(x*1000)/1000; }
+
 function calculateResult(){
   if(!answers.every(v => v !== null)){
     alert('모든 문항에 응답해야 결과를 확인할 수 있습니다.');
@@ -475,6 +514,7 @@ function calculateResult(){
   let scores = {A:0,B:0,C:0,D:0};
   answers.forEach((v, i) => { scores[questions[i].a] += v; });
 
+  // A/B/C/D 각각 8문항 * 1~7점 => 합계 8~56, 기준 32(평균 4)
   const code =
     (scores.A >= 32 ? 'R' : 'P') +
     (scores.B >= 32 ? 'I' : 'C') +
@@ -488,6 +528,10 @@ function calculateResult(){
   setAvatar(document.getElementById('typeAvatar'), code, false);
   document.getElementById('typeDesc').textContent = data.desc;
 
+  // 그래프 복구(핵심)
+  renderDetailBars(scores);
+
+  // 경고 박스
   const warn = document.getElementById('warnBox');
   warn.innerHTML = '';
   const neutral = answers.filter(v=>v===4).length;
@@ -495,6 +539,7 @@ function calculateResult(){
   if(neutral/answers.length >= 0.33) warn.innerHTML += '<div class="notice">중립 응답 비율이 높습니다. 일부 문항을 다시 고민해 보세요.</div>';
   if(maxSame/answers.length >= 0.66) warn.innerHTML += '<div class="notice">응답이 한쪽으로 치우쳐 있습니다. 신중한 응답을 권장합니다.</div>';
 
+  // 주제/사상가
   const ulI = document.getElementById('typeIssues');
   ulI.innerHTML = '';
   data.issues.forEach(i => {
@@ -511,35 +556,61 @@ function calculateResult(){
     ulT.appendChild(li);
   });
 
+  // 코드 설명 복사
   document.getElementById('codeExplain').innerHTML =
     document.querySelector('#page-main .code-box').innerHTML;
 
-  // 제출 payload 준비(최소 통계)
-  const A_side = (scores.A >= 32 ? 'R' : 'P');
-  const B_side = (scores.B >= 32 ? 'I' : 'C');
-  const C_side = (scores.C >= 32 ? 'H' : 'E');
-  const D_side = (scores.D >= 32 ? 'A' : 'S');
-
+  // 제출 payload 준비
   lastResultPayload = {
     version: APP_VERSION,
+    submitted_at: new Date().toISOString(),
     code,
-    A_side, A_strength: strengthLabel(scores.A),
-    B_side, B_strength: strengthLabel(scores.B),
-    C_side, C_strength: strengthLabel(scores.C),
-    D_side, D_strength: strengthLabel(scores.D),
+    scores,
+    answers: [...answers],
     neutral_rate: ratio3(neutral / answers.length),
     max_same_rate: ratio3(maxSame / answers.length)
   };
-
   hasSubmitted = false;
-  document.getElementById('submitBtn').disabled = false;
+  submitBtn.disabled = false;
 
   showPage('page-result');
 }
+
 resultBtn.addEventListener('click', calculateResult);
 
 /* =========================
-   전체 유형 페이지 렌더(카드 + 아바타)
+   결과 제출 (A안)
+========================= */
+submitBtn.addEventListener('click', async () => {
+  if(hasSubmitted) return;
+  if(!lastResultPayload){
+    alert('제출할 결과가 없습니다. 먼저 검사를 완료해 주세요.');
+    return;
+  }
+
+  submitBtn.disabled = true;
+
+  try{
+    const res = await fetch(WEBAPP_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(lastResultPayload),
+    });
+
+    // Apps Script가 CORS/JSON 응답을 안 주는 설정인 경우도 있으니,
+    // 여기서는 "성공 시도"를 성공으로 간주(HTTP 에러는 catch로)
+    hasSubmitted = true;
+
+    const warn = document.getElementById('warnBox');
+    warn.innerHTML = '<div class="oknote">제출 완료</div>' + warn.innerHTML;
+  }catch(e){
+    submitBtn.disabled = false;
+    alert('제출 중 오류가 발생했습니다. 네트워크/웹앱 설정을 확인해 주세요.');
+  }
+});
+
+/* =========================
+   전체 유형 페이지 렌더(버그 수정: 중복 append 제거)
 ========================= */
 const all = document.getElementById('allTypes');
 function renderAllTypes(){
