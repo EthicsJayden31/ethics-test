@@ -76,6 +76,18 @@
     grid-template-columns: 1fr;
     gap: 10px;
   }
+  .result-section{
+    margin-top:16px;
+    padding:14px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:#fcfcff;
+  }
+  .result-section h3{
+    margin:0 0 8px;
+    text-align:left;
+  }
+  .result-section ul{margin:0 0 0 18px}
 
   /* 요소별 세부 성향(시각화) */
   .trait-grid{
@@ -271,14 +283,20 @@
       </div>
     </div>
 
-    <h3>관심 있어할 만한 주제</h3>
-    <ul id="typeIssues"></ul>
+    <div class="result-section">
+      <h3>관심 있어할 만한 주제</h3>
+      <ul id="typeIssues"></ul>
+    </div>
 
-    <h3>이 유형과 가까운 윤리 사상가</h3>
-    <ul id="typeThinkers"></ul>
+    <div class="result-section">
+      <h3>이 유형과 가까운 윤리 사상가</h3>
+      <ul id="typeThinkers"></ul>
+    </div>
 
-    <h3>윤리 성향 코드 다시 보기</h3>
-    <div class="code-box" id="codeExplain"></div>
+    <div class="result-section">
+      <h3>윤리 성향 코드 다시 보기</h3>
+      <div class="code-box" id="codeExplain"></div>
+    </div>
 
     <div class="btnrow">
       <button onclick="location.reload()">다시 검사하기</button>
@@ -314,13 +332,12 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImO
 /* =========================
    ✅ 코드 버전 (여기만 올리면 화면에도 바로 표시됩니다)
 ========================= */
-const APP_VERSION = "v2.3.2 (fix: version display + result button enable)";
+const APP_VERSION = "v2.3.4";
 
 /* ✅ 버전 표기 강제 갱신 */
 (function(){
   const vEl = document.getElementById("versionTag");
-  const cacheHint = `${location.pathname}?v=${encodeURIComponent(APP_VERSION)}`;
-  vEl.textContent = `${APP_VERSION} · 캐시 확인용: ${cacheHint}`;
+  vEl.textContent = APP_VERSION;
 })();
 
 /* =========================
@@ -376,6 +393,16 @@ const questions=[
   {t:'문제는 제도 안에서 차근차근 해결하는 것이 좋다고 생각한다.', axis:'D', pole:'S'},
   {t:'너무 급하게 바꾸면 더 큰 문제가 생길 수 있다고 생각한다.', axis:'D', pole:'S'}
 ];
+
+function shuffleInPlace(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+// 설문은 페이지 로드 시 한 번만 무작위 순서로 섞습니다.
+shuffleInPlace(questions);
 
 /* =========================
    16유형 DB (원문 그대로)
@@ -630,7 +657,7 @@ function calcAxis(axisKey){
 
 /* =========================
    요소별 세부 성향 시각화
-   ✅ 현재 코드 기준(diff>0 => 왼쪽(p1) 쪽) 이므로 markerPos는 50 + diff*k
+   ✅ diff>0 이면 왼쪽(p1) 쪽으로 이동해야 하므로 markerPos는 50 - diff*k
 ========================= */
 const axisMeta = {
   A:{title:'판단 기준', left:'R(결과)', right:'P(원칙)'},
@@ -641,7 +668,7 @@ const axisMeta = {
 
 function markerPosFromDiff(diff){
   const k = 12.5;
-  const pos = 50 + diff * k;
+  const pos = 50 - diff * k;
   return Math.max(6, Math.min(94, pos));
 }
 function closenessTag(diff){
