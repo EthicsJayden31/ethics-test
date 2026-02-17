@@ -1,46 +1,191 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>윤리 성향 진단 검사</title>
-  <style>
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background:#f5f6f8; margin:0; padding:20px; }
-    .page { display:none; max-width:960px; margin:0 auto; }
-    .active { display:block; }
-    h1, h2, h3 { text-align:center; }
-    .card { background:#fff; padding:24px; margin-bottom:18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.1); }
-    .question p { font-weight:600; }
-    .scale label { display:block; margin:6px 0; }
-    button { display:block; margin:30px auto; padding:14px 32px; font-size:16px; }
-    .progress { text-align:right; font-size:14px; color:#555; margin-bottom:10px; }
-    .type { font-size:28px; font-weight:800; margin-top:10px; text-align:center; }
-    .nickname { font-size:20px; margin-top:6px; text-align:center; }
-    .desc { margin-top:18px; line-height:1.8; }
-    .thinkers, .issues { margin-top:14px; padding-left:18px; }
-    .code-box { background:#f1f3f5; padding:16px; border-radius:8px; margin-top:16px; }
-    .notice li { margin-bottom:6px; }
-  
-    /* 요소별 세부 성향(그래프) */
-    .smallhint{color:#6b7280;font-size:13px;margin-top:8px}
-    .detail-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-top:12px}
-    .detail-bars{display:grid;gap:12px;margin-top:6px}
-    .bar-row{display:grid;grid-template-columns:110px 1fr 110px;gap:10px;align-items:center}
-    .bar-l,.bar-r{font-size:13px;color:#6b7280}
-    .bar-l{text-align:left}
-    .bar-r{text-align:right}
-    .bar-track{position:relative;height:14px;border-radius:999px;background:#e5e7eb;overflow:hidden}
-    .bar-mid{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(17,24,39,.25)}
-    .bar-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:999px;background:#7c83fd;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>윤리 성향 진단 검사</title>
+<style>
+  :root{
+    --bg:#f5f6fa;
+    --card:#ffffff;
+    --ink:#111827;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --accent:#7c83fd;
+    --warn-bg:#fff7ed;
+    --warn-line:#fb923c;
+  }
+  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);margin:0;padding:20px;color:var(--ink)}
+  .page{display:none;max-width:960px;margin:0 auto}
+  .active{display:block}
+  .card{background:var(--card);padding:24px;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.08);margin-bottom:20px}
+  h1,h2,h3{text-align:center;margin:0 0 12px}
+  p{margin:10px 0}
+  button{display:inline-block;margin:14px 8px 0 0;padding:12px 20px;font-size:16px;border:none;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer}
+  button:disabled{background:#c7c7c7;cursor:not-allowed}
+  .btnrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .progress{text-align:right;color:#555;margin-bottom:10px}
+  .type{font-size:30px;font-weight:800;text-align:center;line-height:1.2}
+  .nickname{font-size:22px;text-align:center;margin-top:6px;font-weight:700}
+  .notice{background:var(--warn-bg);border-left:6px solid var(--warn-line);padding:14px;margin:14px 0;border-radius:10px}
+  .code-box{background:#eef2ff;padding:16px;border-radius:12px;margin-top:16px}
+  ul{line-height:1.8;margin:10px 0 0 18px}
 
-    /* 모바일 보강 */
-    @media (max-width:560px){
-      body{padding:12px}
-      .card{padding:16px}
-      button{width:100%;margin:12px auto}
-      .bar-row{grid-template-columns:92px 1fr 92px}
+  /* avatar */
+  .avatar{display:flex;justify-content:center;margin:14px 0 6px}
+  .avatar svg{width:160px;height:160px;filter: drop-shadow(0 6px 10px rgba(0,0,0,.10))}
+  .avatar.small svg{width:110px;height:110px}
+
+  /* version */
+  .version{
+    position:fixed; right:14px; bottom:10px;
+    color:#9aa0a6; font-size:12px; user-select:text;
+  }
+
+  /* 1문항 페이지 */
+  .q-wrap{min-height:360px}
+  .q-title{font-size:18px;font-weight:800;margin:8px 0 14px}
+  .scale{margin-top:8px}
+  .opt{
+    display:flex; gap:10px; align-items:flex-start;
+    padding:10px 12px; border-radius:12px;
+    border:1px solid var(--line); margin:8px 0;
+    cursor:pointer; background:#fff;
+  }
+  .opt:hover{background:#f8fafc}
+  .opt input{margin-top:3px}
+  .smallhint{color:var(--muted);font-size:13px;margin-top:6px}
+  .muted{color:var(--muted)}
+  .center{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+
+  /* ===== 결과/전체유형: 모바일 반응형 레이아웃 개선 ===== */
+  .result-header{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items:start;
+  }
+  .result-top{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* 요소별 세부 성향(시각화) */
+  .trait-grid{
+    margin-top:14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .trait-card{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    background:#fff;
+  }
+  .trait-title{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    font-weight:800;
+    margin-bottom:10px;
+  }
+  .trait-axis{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .bar{
+    position:relative;
+    height:14px;
+    border-radius:999px;
+    background:linear-gradient(90deg, rgba(124,131,253,.35), rgba(245,158,11,.35));
+    overflow:hidden;
+    border:1px solid rgba(17,24,39,.08);
+  }
+  .bar .mid{
+    position:absolute; left:50%; top:0; bottom:0; width:2px;
+    background:rgba(17,24,39,.18);
+  }
+  .bar .marker{
+    position:absolute; top:50%;
+    width:18px; height:18px;
+    border-radius:999px;
+    background:#111827;
+    transform:translate(-50%,-50%);
+    box-shadow:0 6px 12px rgba(0,0,0,.16);
+    border:2px solid #fff;
+  }
+  .barlabel{
+    display:flex;
+    justify-content:space-between;
+    margin-top:10px;
+    font-size:13px;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .barlabel span{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .hint{
+    margin-top:10px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.6;
+  }
+  .closeness{
+    margin-top:10px;
+    font-size:14px;
+    font-weight:800;
+  }
+  .tag{
+    display:inline-block;
+    font-size:12px;
+    font-weight:800;
+    padding:4px 10px;
+    border-radius:999px;
+    background:#f3f4f6;
+    color:#374151;
+  }
+  .tag.leanL{background:rgba(124,131,253,.16);color:#3730a3}
+  .tag.leanR{background:rgba(245,158,11,.16);color:#92400e}
+  .tag.mid{background:#f3f4f6;color:#374151}
+
+  /* 전체 유형 카드 */
+  .type-card{
+    display:grid;
+    grid-template-columns: 120px 1fr;
+    gap: 14px;
+    align-items:start;
+  }
+  .type-card .meta{min-width:0}
+  .type-code{font-weight:900;font-size:18px}
+  .type-name{font-weight:800;margin-top:6px}
+  .type-desc{margin-top:10px;line-height:1.8;white-space:pre-line}
+
+  /* ===== 모바일 최적화 ===== */
+  @media (max-width: 560px){
+    body{padding:14px}
+    .card{padding:16px;border-radius:14px}
+    button{width:100%;margin:10px 0 0 0}
+    .btnrow{gap:8px}
+    .type{font-size:26px}
+    .nickname{font-size:18px}
+    .avatar svg{width:132px;height:132px}
+    .trait-grid{grid-template-columns: 1fr; gap:10px}
+    .type-card{
+      grid-template-columns: 1fr;
+      gap: 10px;
     }
-  </style>
+    .avatar.small{justify-content:flex-start}
+    .avatar.small svg{width:96px;height:96px}
+    .version{right:10px;bottom:8px;font-size:11px}
+  }
+</style>
 </head>
 <body>
 
@@ -48,346 +193,602 @@
 <div id="page-main" class="page active">
   <div class="card">
     <h1>윤리 성향 진단 검사</h1>
-    <p>
-      이 검사는 여러분이 일상생활과 사회 문제를 바라볼 때
-      <strong>어떤 기준으로 옳고 그름을 판단하는 경향이 있는지</strong>를 살펴보기 위한 활동입니다.
-    </p>
-    <p>
-      시험이나 성적 평가를 위한 검사가 아니며, 정답도 없습니다.
-      솔직한 응답일수록 자신의 생각을 더 잘 이해할 수 있습니다.
-    </p>
+    <p>이 검사는 일상과 사회 문제를 볼 때, 내가 <strong>어떤 기준으로 옳고 그름을 판단하는지</strong>를 알아보는 활동입니다.</p>
+    <p>정답은 없고 성적에 반영되지 않습니다. <strong>내 생각과 가장 가까운 선택</strong>을 솔직하게 골라주세요.</p>
 
     <h3>응답 방법 안내</h3>
-    <p>
-      각 문항을 잘 읽고 충분히 생각한 다음,
-      <strong>자신의 생각과 가장 가까운 것</strong>을 선택해 주세요.
-    </p>
+    <p>각 문항을 잘 읽고 충분히 생각한 다음, 자신의 생각과 가장 가까운 것을 선택해 주세요.</p>
 
     <h3>유의사항</h3>
-    <ul class="notice">
-      <li>다른 사람과 상의하지 말고, 스스로 생각하여 응답하세요.</li>
-      <li>모든 문항에 동일한 답을 반복해서 선택하면 결과가 정확하지 않습니다.</li>
-      <li>모든 문항에 응답해야만 결과를 확인할 수 있습니다.</li>
+    <ul>
+      <li>모든 문항에 응답해야 결과를 확인할 수 있습니다.</li>
+      <li>같은 번호만 반복하면 결과 해석의 정확도가 낮아집니다.</li>
+      <li>다른 사람과 상의하지 말고 스스로 판단해 주세요.</li>
     </ul>
 
     <h3>윤리 성향 코드란?</h3>
     <div class="code-box">
-      <p><strong>A 영역 (R / P)</strong> – 판단 기준 ⚖️📜</p>
-      <ul>
-        <li>⚖️ R(Result): 결과와 효과를 중요하게 생각</li>
-        <li>📜 P(Principle): 규칙과 원칙을 중요하게 생각</li>
-      </ul>
-      <p><strong>B 영역 (I / C)</strong> – 사회 관점 👤👥</p>
-      <ul>
-        <li>👤 I(Individual): 개인의 자유와 선택 중시</li>
-        <li>👥 C(Community): 공동체의 질서와 이익 중시</li>
-      </ul>
-      <p><strong>C 영역 (H / E)</strong> – 도덕 대상 🧍🌱</p>
-      <ul>
-        <li>🧍 H(Human): 인간 중심으로 도덕 판단</li>
-        <li>🌱 E(Environment): 자연·동물까지 고려</li>
-      </ul>
-      <p><strong>D 영역 (A / S)</strong> – 행동 태도 🚀🛑</p>
-      <ul>
-        <li>🚀 A(Action): 문제 해결을 위해 행동 중시</li>
-        <li>🛑 S(Stability): 질서와 안정을 우선</li>
-      </ul>
+      <p><strong>A 영역 (R / P)</strong> ⚖️📜 : 결과 중시 / 원칙 중시</p>
+      <p><strong>B 영역 (I / C)</strong> 👤👥 : 개인 중심 / 공동체 중심</p>
+      <p><strong>C 영역 (H / E)</strong> 🧍🌱 : 인간 중심 / 환경·생명 고려</p>
+      <p><strong>D 영역 (A / S)</strong> 🚀🛑 : 행동 중시 / 안정 중시</p>
     </div>
 
-    <button onclick="startTest()">검사 시작</button>
+    <div class="btnrow">
+      <button type="button" id="startBtn">검사 시작</button>
+    </div>
   </div>
 </div>
 
-<!-- 검사 페이지 -->
+<!-- 검사 페이지 (1문항씩) -->
 <div id="page-test" class="page">
   <div class="progress" id="progress"></div>
-  <form id="testForm"></form>
-  <button type="button" id="resultBtn" onclick="calculateResult()" disabled>결과 확인</button>
+  <div class="card q-wrap">
+    <div class="muted" id="qMeta"></div>
+    <div class="q-title" id="qText"></div>
+    <div class="scale" id="qOptions"></div>
+    <div class="smallhint">Tip: 선택지는 한 줄씩 보입니다. (줄을 클릭하면 체크됩니다.)</div>
+
+    <div class="btnrow">
+      <button type="button" id="prevBtn">이전</button>
+      <button type="button" id="nextBtn">다음</button>
+      <button type="button" id="resultBtn" disabled>결과 확인</button>
+    </div>
+  </div>
 </div>
 
 <!-- 결과 페이지 -->
 <div id="page-result" class="page">
   <div class="card">
     <h2>검사 결과</h2>
-    <div class="type" id="typeCode"></div>
-    <div class="nickname" id="typeName"></div>
-    <div id="resultNotice" class="card" style="display:none;background:#fff7ed;border-left:6px solid #fb923c"></div>
-    <div class="desc" id="typeDesc"></div>
 
-    <h3>요소별 세부 성향</h3>
-    <div class="detail-box" id="detailBox">
-      <div id="detailBars" class="detail-bars"></div>
-      <div class="smallhint">각 막대는 두 요소 중 어느 쪽에 더 가까운지(좌↔우)를 보여줍니다. 수치는 표시하지 않습니다.</div>
+    <div class="result-header">
+      <div class="result-top">
+        <div class="type" id="typeCode"></div>
+        <div class="nickname" id="typeName"></div>
+        <div id="typeAvatar" class="avatar"></div>
+        <div id="warnBox"></div>
+        <p id="typeDesc" style="line-height:1.9; white-space:pre-line; margin-top:8px;"></p>
+      </div>
+
+      <!-- (1) 요소별 세부 성향 시각화 -->
+      <div>
+        <h3 style="margin-top:8px">요소별 세부 성향</h3>
+        <div class="muted" style="text-align:center;margin-top:-6px;font-size:13px">
+          막대를 보면 <strong>어느 쪽 성향에 더 가까운지</strong> 한눈에 알 수 있어요.
+        </div>
+        <div class="trait-grid" id="traitGrid"></div>
+        <div class="hint" style="text-align:center">
+          ※ 가운데에 가까울수록 두 성향이 비슷하게 나타난 것입니다.
+        </div>
+      </div>
     </div>
 
     <h3>관심 있어할 만한 주제</h3>
-    <ul class="issues" id="typeIssues"></ul>
+    <ul id="typeIssues"></ul>
 
-    <h3>이 유형과 가까운 사상가</h3>
-    <ul class="thinkers" id="typeThinkers"></ul>
+    <h3>이 유형과 가까운 윤리 사상가</h3>
+    <ul id="typeThinkers"></ul>
 
     <h3>윤리 성향 코드 다시 보기</h3>
     <div class="code-box" id="codeExplain"></div>
 
-    <button onclick="location.reload()">다시 검사하기</button>
+    <div class="btnrow">
+      <button onclick="location.reload()">다시 검사하기</button>
+      <button onclick="showPage('page-all')">모든 유형 확인하기</button>
+
+      <!-- ✅ (추가) 결과 수집 버튼: 문구는 "결과 제출"만 -->
+      <button type="button" id="submitBtn">결과 제출</button>
+    </div>
   </div>
 </div>
 
+<!-- 전체 유형 페이지 -->
+<div id="page-all" class="page">
+  <div class="card">
+    <h2>16가지 윤리 성향 유형 한눈에 보기</h2>
+    <div class="muted" style="text-align:center;margin-top:-6px;font-size:13px">
+      모바일에서는 카드가 세로로 정렬됩니다.
+    </div>
+    <div id="allTypes" style="margin-top:14px"></div>
+    <div class="btnrow">
+      <button onclick="showPage('page-result')">결과로 돌아가기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 버전 표기 -->
+<div class="version" id="versionTag"></div>
+
 <script>
+/* =========================
+   ✅ 결과 수집용 웹앱 URL (필요 시 여기만 수정)
+========================= */
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImOT1XpsFogJdFXYrXY14q3Cq3hEn1YuTwAJWoD8DSiir9092y_8JAkg/exec";
+
+/* =========================
+   코드 버전
+========================= */
+const APP_VERSION = "v2.3.0 (trait-visual + mobile layout)";
+document.getElementById("versionTag").textContent = APP_VERSION;
+
+/* =========================
+   페이지 전환
+========================= */
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function startTest(){ showPage('page-test'); }
 
-const scaleText = [
-  '전혀 그렇지 않다',
-  '대체로 그렇지 않다',
-  '약간 그렇지 않다',
-  '중립',
-  '약간 그렇다',
-  '대체로 그렇다',
-  '매우 그렇다'
+/* =========================
+   척도/문항
+========================= */
+const scale=[
+  '매우 그렇지 않다','그렇지 않다','약간 그렇지 않다','중립','약간 그렇다','그렇다','매우 그렇다'
 ];
 
-const questions = [
-  // A 판단 기준 (8)
-  {text:'많은 사람에게 도움이 된다면 그 선택은 옳다고 생각한다.', area:'A'},
-  {text:'결과가 좋다면 규칙을 어기는 것도 어느 정도는 괜찮다.', area:'A'},
-  {text:'규칙은 상황에 따라 바뀔 수 있다고 생각한다.', area:'A'},
-  {text:'행동을 평가할 때 의도보다 결과가 더 중요하다.', area:'A'},
-  {text:'결과가 좋아도 규칙을 어긴 행동은 옳지 않다.', area:'A'},
-  {text:'모든 사람에게 지켜야 할 기준은 예외 없이 적용되어야 한다.', area:'A'},
-  {text:'상황이 급박하다면 원칙보다 결과를 먼저 생각해야 한다.', area:'A'},
-  {text:'원칙은 불리하더라도 지켜야 한다고 생각한다.', area:'A'},
+const questions=[
+  /* A: 판단 기준 (R/P) */
+  {t:'결과적으로 도움이 더 크면, 그 선택은 옳다고 느낀다.', axis:'A', pole:'R'},
+  {t:'규칙보다 “피해를 줄이는 것”이 더 중요하다고 생각한다.', axis:'A', pole:'R'},
+  {t:'상황이 급하면, 원칙을 조금 어겨서라도 문제를 해결하는 편이 낫다.', axis:'A', pole:'R'},
+  {t:'평가할 때 “의도”보다 “결과가 어땠는지”를 더 본다.', axis:'A', pole:'R'},
+  {t:'결과가 좋아도 규칙이나 약속을 어겼다면 옳지 않다고 생각한다.', axis:'A', pole:'P'},
+  {t:'사람이라면 누구나 지켜야 하는 원칙이 있다고 생각한다.', axis:'A', pole:'P'},
+  {t:'옳은 행동은 상황이 달라도 흔들리면 안 된다고 생각한다.', axis:'A', pole:'P'},
+  {t:'손해가 있어도, 원칙을 지키는 것이 중요하다고 생각한다.', axis:'A', pole:'P'},
 
-  // B 사회 관점 (8)
-  {text:'사회보다 개인의 선택이 더 존중받아야 한다.', area:'B'},
-  {text:'사회 질서를 위해 개인의 자유는 제한될 수 있다.', area:'B'},
-  {text:'공동체의 이익을 위해 개인이 양보해야 할 때가 있다.', area:'B'},
-  {text:'국가나 사회는 개인의 삶에 너무 깊이 개입해서는 안 된다.', area:'B'},
-  {text:'개인의 권리는 어떤 경우에도 침해되어서는 안 된다.', area:'B'},
-  {text:'사회가 안정되려면 개인의 희생이 필요할 수 있다.', area:'B'},
-  {text:'개인의 자유가 사회 전체에 피해를 주어서는 안 된다.', area:'B'},
-  {text:'사회 규칙은 개인의 선택보다 우선할 수 있다.', area:'B'},
+  /* B: 사회 관점 (I/C) */
+  {t:'개인의 선택은 최대한 존중되어야 한다고 생각한다.', axis:'B', pole:'I'},
+  {t:'“내 삶은 내가 정한다”는 생각이 강한 편이다.', axis:'B', pole:'I'},
+  {t:'국가나 사회가 개인의 삶에 너무 간섭하면 안 된다고 생각한다.', axis:'B', pole:'I'},
+  {t:'다수가 불편하더라도 개인의 자유가 우선일 때가 있다고 생각한다.', axis:'B', pole:'I'},
+  {t:'사회가 안전하려면 개인의 자유가 일부 제한될 수도 있다고 생각한다.', axis:'B', pole:'C'},
+  {t:'공동체의 규칙을 지키는 것이 개인의 편함보다 중요할 때가 많다.', axis:'B', pole:'C'},
+  {t:'전체를 위해 개인이 양보해야 하는 상황이 있다고 생각한다.', axis:'B', pole:'C'},
+  {t:'개인의 행동이 공동체에 피해를 주면 제재가 필요하다고 생각한다.', axis:'B', pole:'C'},
 
-  // C 도덕 대상 (8)
-  {text:'동물도 고통을 느낀다면 도덕적으로 고려해야 한다.', area:'C'},
-  {text:'자연은 인간의 삶에 도움이 되도록 활용될 수 있다.', area:'C'},
-  {text:'환경 보호를 위해 불편함을 감수할 수 있다.', area:'C'},
-  {text:'도덕적 판단의 중심은 인간이라고 생각한다.', area:'C'},
-  {text:'미래 세대를 위해 현재 세대는 책임을 져야 한다.', area:'C'},
-  {text:'자연과 생명 그 자체도 소중한 가치를 가진다.', area:'C'},
-  {text:'인간의 필요가 자연 보호보다 우선할 수 있다.', area:'C'},
-  {text:'동물 실험은 필요하다면 허용될 수 있다.', area:'C'},
+  /* C: 도덕 대상 (H/E) */
+  {t:'도덕 판단에서 가장 중요한 대상은 “사람”이라고 생각한다.', axis:'C', pole:'H'},
+  {t:'사람의 안전과 생명이 환경보다 우선이라고 생각한다.', axis:'C', pole:'H'},
+  {t:'동물이나 자연보다 사람의 필요가 더 중요할 때가 많다고 생각한다.', axis:'C', pole:'H'},
+  {t:'환경을 지키는 것도 결국 사람을 위한 일이라고 생각한다.', axis:'C', pole:'H'},
+  {t:'동물도 고통을 느낀다면 도덕적으로 고려해야 한다고 생각한다.', axis:'C', pole:'E'},
+  {t:'미래 세대를 위해 지금 불편을 감수할 필요가 있다고 생각한다.', axis:'C', pole:'E'},
+  {t:'자연과 생명은 사람에게 도움이 되지 않아도 소중하다고 생각한다.', axis:'C', pole:'E'},
+  {t:'환경 보호는 선택이 아니라 “지켜야 할 책임”이라고 생각한다.', axis:'C', pole:'E'},
 
-  // D 행동 태도 (8)
-  {text:'부당하다고 느끼는 규칙에는 문제를 제기해야 한다.', area:'D'},
-  {text:'사회 문제에 개인이 행동으로 나서는 것이 중요하다.', area:'D'},
-  {text:'질서를 유지하기 위해 개인의 행동은 조심스러워야 한다.', area:'D'},
-  {text:'옳다고 믿는 일이라면 위험을 감수할 수 있다.', area:'D'},
-  {text:'사회 규칙을 지키는 것이 가장 중요하다고 생각한다.', area:'D'},
-  {text:'현실이 불공정하다면 바꾸기 위한 행동이 필요하다.', area:'D'},
-  {text:'변화보다는 안정이 더 중요하다고 생각한다.', area:'D'},
-  {text:'문제가 있어도 제도 안에서 해결하는 것이 바람직하다.', area:'D'}
+  /* D: 행동 태도 (A/S) */
+  {t:'불공정하다고 느끼면 직접 나서서 바꾸려는 편이다.', axis:'D', pole:'A'},
+  {t:'옳다고 믿으면, 눈치 보지 않고 말하거나 행동하는 편이다.', axis:'D', pole:'A'},
+  {t:'문제를 발견하면 “지금 할 수 있는 행동”부터 찾는 편이다.', axis:'D', pole:'A'},
+  {t:'변화를 위해 어느 정도의 갈등은 감수할 수 있다고 생각한다.', axis:'D', pole:'A'},
+  {t:'큰 변화보다 안정과 질서를 지키는 것이 더 중요하다고 생각한다.', axis:'D', pole:'S'},
+  {t:'갈등이 커질 것 같으면 신중하게 접근하는 편이다.', axis:'D', pole:'S'},
+  {t:'문제는 제도 안에서 차근차근 해결하는 것이 좋다고 생각한다.', axis:'D', pole:'S'},
+  {t:'너무 급하게 바꾸면 더 큰 문제가 생길 수 있다고 생각한다.', axis:'D', pole:'S'}
 ];
 
-const form = document.getElementById('testForm');
-questions.forEach((q, idx) => {
-  const div = document.createElement('div');
-  div.className = 'card question';
-  div.innerHTML = `<p>${idx+1}. ${q.text}</p><div class="scale">` +
-    scaleText.map((t,i)=>`<label><input type="radio" name="q${idx}" value="${i+1}" required> ${t}</label>`).join('') +
-    '</div>';
-  form.appendChild(div);
+/* =========================
+   16유형 DB
+========================= */
+const typeDB={
+  RIHA:{name:'실천적 개인 판단자',desc:'이 유형은 도덕 판단에서 행동의 결과(R)를 가장 중요한 기준으로 삼습니다. 규칙이나 전통보다 실제로 어떤 효과가 나타나는지를 중시하며, 판단의 출발점은 개인의 선택과 책임(I)에 놓여 있습니다. 도덕적 고려의 중심은 인간(H)이며, 사람들의 행복과 고통을 기준으로 상황을 해석하는 경향이 강합니다. 문제를 인식하면 생각에 그치지 않고 직접 행동(A)으로 옮기려는 태도가 뚜렷합니다. 그래서 사회 문제를 개인의 실천으로 바꿀 수 있다고 믿고, 일상 속 선택의 윤리성을 중요하게 여깁니다.',issues:['시민 참여: 개인의 행동이 사회를 바꿀 수 있는가','표현의 자유: 어디까지 허용되어야 하는가','기본소득: 개인의 선택과 사회적 책임'],thinkers:['존 스튜어트 밀','존 듀이']},
+  RIHS:{name:'신중한 개인 판단자',desc:'이 유형은 결과 중심의 판단(R)을 유지하면서도 결론을 내리기 전에 충분히 따져보는 편입니다. 개인의 자유와 선택(I)을 중요하게 여기되, 그 선택이 초래할 파장까지 함께 생각하려 합니다. 도덕적 고려의 초점은 인간(H)에 있으며, 타인의 삶과 권리 침해 여부를 민감하게 살핍니다. 다만 실행에 있어서는 즉각적인 실천보다 숙고와 조절(S)을 통해 안정적인 선택을 선호합니다. 변화의 필요성은 인정하지만, 무리한 행동이나 급격한 전환에는 거리를 두려는 경향이 있습니다.',issues:['프라이버시 vs 공익: 감시 사회의 경계','혐오 표현 규제: 자유와 피해의 균형','정책 실험: 안전한 변화는 가능한가'],thinkers:['존 롤즈','존 스튜어트 밀']},
+  RIEA:{name:'환경 감수성 개인 행동가',desc:'이 유형은 결과(R)를 중시하면서도 도덕적 고려의 범위를 인간을 넘어 환경과 생명(E)으로 확장합니다. 판단의 출발은 개인의 선택(I)이며, 개인이 어떤 선택을 하느냐가 사회와 자연에 실제 영향을 준다고 봅니다. 인간 중심의 이익만이 아니라 생태계의 균형과 장기적 피해까지 고려하려는 경향이 강합니다. 문제를 인식하면 행동(A)으로 이어지는 편이라, 일상 속 실천이나 캠페인 참여에 적극적일 수 있습니다. 결과적으로 “내 선택이 자연에 남기는 흔적”을 윤리 판단의 핵심으로 삼는 성향입니다.',issues:['기후 행동: 개인 실천의 효과','동물권: 인간 이익의 한계','친환경 소비: 비용 vs 책임'],thinkers:['피터 싱어','알도 레오폴드']},
+  RIES:{name:'환경 고려 개인 신중가',desc:'이 유형은 결과(R)의 중요성을 인정하면서도 환경·생명(E)의 가치를 함께 고려합니다. 판단의 중심은 개인(I)의 숙고에 있으며, 성급한 결론보다 근거와 맥락을 점검하려는 성향이 강합니다. 환경 보호의 필요성에는 공감하지만, 현실적 제약과 사회적 수용 가능성도 함께 따져봅니다. 그래서 직접 행동보다는 조심스러운 선택(S)과 점진적 변화, 제도적 접근을 선호할 수 있습니다. 지속 가능성과 개인 삶의 안정 사이에서 균형점을 찾으려는 유형입니다.',issues:['탄소세: 정의와 수용성','에너지 전환: 속도와 안전','플라스틱 규제: 불편과 효과'],thinkers:['존 롤즈','알도 레오폴드']},
+
+  RCHA:{name:'공동체 개혁 실천가',desc:'이 유형은 도덕 판단에서 결과(R)를 기준으로 삼되, 그 결과가 공동체 전체(C)에 미치는 영향을 우선으로 봅니다. 개인의 이익보다 사회 전체의 효용과 피해 감소를 더 중요한 판단 근거로 삼는 편입니다. 도덕적 고려의 중심은 인간(H)이며, 사회 구성원의 삶의 질과 공정한 기회에 관심이 큽니다. 문제를 발견하면 적극적인 행동(A)과 제도 개혁이 필요하다고 느끼기 쉽습니다. 그래서 공공정책, 사회운동, 집단적 책임 같은 이슈에 비교적 높은 관심을 보입니다.',issues:['복지 확대: 재정과 효과','교육 격차: 구조적 해법','노동 환경: 규제와 성장'],thinkers:['제러미 벤담','존 듀이']},
+  RCHS:{name:'공동체 현실 관리자',desc:'이 유형은 공동체(C)의 안정과 효율을 중심에 두고 결과(R)를 판단합니다. 도덕적 선택의 목표는 사회 전체가 덜 혼란스럽고 더 안전해지는 방향에 있다고 보는 경향이 있습니다. 고려의 초점은 인간(H)이며, 구성원의 안전과 질서 유지를 중요한 윤리 요소로 봅니다. 다만 변화의 방식에서는 급격한 행동보다 유지와 점진적 개선(S)을 선호합니다. 현실적 실행 가능성과 사회적 합의를 중시하여 ‘관리·조정’ 관점이 강하게 나타납니다.',issues:['치안 강화 vs 인권: 균형점 찾기','사회 규범: 자유와 질서','정책 우선순위: 제한된 자원 배분'],thinkers:['제러미 벤담','에밀 뒤르켐']},
+  RCEA:{name:'생태 공동체 행동가',desc:'이 유형은 결과(R)를 중시하면서 도덕적 고려를 공동체(C)와 환경·생명(E)으로 함께 확장합니다. 사회와 자연을 분리하지 않고, 공동체의 번영이 생태적 기반 위에 있다고 생각합니다. 인간의 편익만이 아니라 생태계 손상과 장기적 피해를 결과 평가에 포함시키려는 경향이 강합니다. 문제를 인식하면 실천과 행동(A)으로 옮겨 변화의 동력을 만들고자 합니다. 환경 이슈를 개인 실천을 넘어 사회 구조의 책임으로 연결해 바라보는 편입니다.',issues:['환경 정책: 책임의 주체는 누구인가','생태 도시: 편의와 지속 가능성','산업 전환: 일자리와 환경의 조화'],thinkers:['알도 레오폴드','피터 싱어']},
+  RCES:{name:'생태 공동체 신중가',desc:'이 유형은 공동체(C)와 환경·생명(E)의 조화를 중요하게 여기면서 결과(R)를 판단 기준으로 삼습니다. 다만 해결 방식은 단기 성과보다 장기적 안정과 지속(S)을 우선하는 편입니다. 사회적 합의와 제도 설계가 충분히 갖춰져야 변화가 오래 간다고 생각합니다. 생태적 가치가 중요하더라도 공동체가 감당 가능한 속도와 방식으로 전환해야 한다고 봅니다. 그래서 균형·조율·합의의 언어로 문제를 풀려는 경향이 뚜렷합니다.',issues:['규제 정책: 충격 완화 설계','기후 적응: 현실적 전략','환경 갈등: 지역·세대 조정'],thinkers:['존 롤즈','알도 레오폴드']},
+
+  PIHA:{name:'원칙적 개인 실천가',desc:'이 유형은 도덕 판단에서 결과보다 원칙(P)을 더 중요한 기준으로 삼습니다. 판단의 출발점은 개인(I)의 양심과 신념이며, “지켜야 할 기준”이 존재한다고 봅니다. 도덕적 고려의 중심은 인간(H)으로, 인간의 존엄과 권리를 절대적 가치로 인식하는 경향이 강합니다. 원칙이 침해되는 상황에서는 행동(A)을 통해 바로잡아야 한다고 느끼기 쉽습니다. 그래서 불의에 대한 저항, 권리 옹호, 신념에 따른 실천이 두드러질 수 있습니다.',issues:['양심과 법: 불복종의 정당성','인권 운동: 원칙과 현실','소수자 권리: 절대 기준의 의미'],thinkers:['임마누엘 칸트','마하트마 간디']},
+  PIHS:{name:'원칙적 개인 성찰가',desc:'이 유형은 원칙(P)을 핵심 기준으로 삼되, 결정을 내릴 때는 개인(I)의 숙고와 성찰을 깊게 거칩니다. 인간(H)의 존엄과 권리를 중요하게 여기며, 무엇이 ‘옳은 일’인지 분명한 기준을 세우려 합니다. 다만 행동에서는 즉각성보다 신중함(S)을 중시하여 갈등을 최소화하는 방식을 찾습니다. 원칙을 지키면서도 사회적 파장과 관계의 균열을 함께 고려하려는 경향이 있습니다. 그래서 확신이 생기기 전까지는 논증과 숙고를 충분히 쌓는 편입니다.',issues:['표현 규제: 원칙과 피해 최소화','법 집행: 절차적 정의','도덕 딜레마: 기준의 일관성'],thinkers:['임마누엘 칸트','존 롤즈']},
+  PIEA:{name:'생명 존중 개인 행동가',desc:'이 유형은 원칙(P)을 바탕으로 도덕적 고려 범위를 자연과 생명(E)까지 확장합니다. 판단의 중심에는 개인(I)의 책임이 있으며, 개인의 선택이 생명에 미치는 영향을 진지하게 받아들입니다. 인간(H)만을 특권적으로 두기보다 생명의 가치가 보편적으로 존중되어야 한다고 보는 경향이 강합니다. 그래서 옳다고 판단하면 행동(A)으로 옮겨 보호와 개선을 시도합니다. 생명 윤리, 동물권, 환경 보전과 같은 이슈에서 강한 도덕적 동기를 보일 수 있습니다.',issues:['동물권: 생명의 기준은 무엇인가','생명 윤리: 기술의 허용 범위','환경 파괴: 인간 중심의 한계'],thinkers:['톰 레건','폴 테일러']},
+  PIES:{name:'생명 존중 개인 신중가',desc:'이 유형은 생명과 환경(E)을 존중해야 한다는 원칙(P)을 중요하게 여기며, 판단은 개인(I)의 숙고를 통해 형성됩니다. 자연과 생명에 대한 책임을 인정하지만, 해결 방식은 급격한 변화보다 안정적 전환(S)을 선호합니다. “옳음”을 주장하는 것만큼이나 그 과정이 지속 가능해야 한다고 생각합니다. 그래서 현실적 조건, 사회적 합의, 실행 가능성을 함께 따져 균형 잡힌 선택을 하려 합니다. 장기적인 관점에서 조화와 절제를 중시하는 유형입니다.',issues:['채식/소비 윤리: 실천의 지속 가능성','에너지 전환: 속도 조절의 필요','환경 교육: 문화적 변화 만들기'],thinkers:['폴 테일러','존 롤즈']},
+
+  PCHA:{name:'규범적 공동체 실천가',desc:'이 유형은 원칙(P)을 공동체(C) 차원에서 지켜야 한다고 보며, 공적 규범의 힘을 중요하게 여깁니다. 개인의 감정보다 사회 전체가 공유할 기준이 필요하다고 생각합니다. 도덕적 고려의 중심은 인간(H)이며, 사회 구성원의 권리와 의무가 정당하게 배분되어야 한다고 봅니다. 문제를 발견하면 공동체가 함께 행동(A)하여 규범을 실현해야 한다고 느끼기 쉽습니다. 그래서 공공선, 사회 정의, 제도적 개선을 ‘함께 실천하는 과제’로 이해하는 경향이 있습니다.',issues:['공정한 제도: 규범의 실현 방식','혐오/차별: 공동체의 책임','공공정책: 의무와 권리의 균형'],thinkers:['존 롤즈','마틴 루서 킹']},
+  PCHS:{name:'규범적 공동체 유지자',desc:'이 유형은 공동체(C)의 규범과 질서를 지키는 것을 핵심 윤리 과제로 보며, 원칙(P)이 사회를 유지하는 토대라고 생각합니다. 인간(H)의 안전한 삶은 안정된 규칙과 역할이 있을 때 가능하다고 보는 경향이 강합니다. 변화 자체를 부정하진 않지만, 변화가 질서를 해치면 더 큰 피해가 생긴다고 우려합니다. 그래서 행동보다는 유지와 관리(S), 절차 준수를 선호합니다. 사회 안정, 전통적 규범, 공동체 책임을 중요하게 여기는 유형입니다.',issues:['질서 vs 자유: 우선순위의 문제','전통 규범: 변화의 한계','공동체 안전: 규칙의 필요성'],thinkers:['에밀 뒤르켐','공자']},
+  PCEA:{name:'생태 규범 공동체 행동가',desc:'이 유형은 생태·환경(E)을 보호해야 한다는 원칙(P)을 공동체(C) 차원에서 실행해야 한다고 봅니다. 개인 실천만으로는 한계가 있으므로 사회적 규범과 제도 설계가 필요하다고 생각합니다. 도덕적 고려는 인간(H)만이 아니라 생태 공동체 전체로 확장되며, 공동 책임을 강조합니다. 필요하다고 판단되면 행동(A)을 통해 규범을 만들고 강화하려는 경향이 있습니다. 환경 보호를 ‘공동체의 규칙’으로 정착시키려는 의지가 강한 유형입니다.',issues:['환경 규범: 법·제도의 역할','기업 책임: 규칙의 강제력','생태 전환: 공동체 행동 전략'],thinkers:['알도 레오폴드','폴 테일러']},
+  PCES:{name:'생태 규범 공동체 신중가',desc:'이 유형은 환경·생명(E)을 존중해야 한다는 원칙(P)을 인정하면서도, 공동체(C)가 감당 가능한 방식으로 변화해야 한다고 봅니다. 도덕적 기준은 분명하지만, 실행은 안정과 지속(S)이 담보되어야 오래 간다고 생각합니다. 생태적 가치가 중요하더라도 사회적 충격과 갈등을 최소화하는 설계가 필요하다고 봅니다. 그래서 합의 과정, 단계적 전환, 제도적 보완을 중시합니다. 장기적 생태 질서를 위해 ‘신중한 전환’을 선호하는 유형입니다.',issues:['환경 갈등 조정: 합의의 기술','정책 단계화: 충격 완화 설계','지속가능성: 장기 운영 전략'],thinkers:['존 롤즈','알도 레오폴드']}
+};
+
+/* =========================
+   캐릭터 SVG (오리지널)
+========================= */
+function paletteByCode(code){
+  const [A,B,C,D] = code.split('');
+  const pal = {bg:'#EEF2FF', suit:'#7C83FD', accent:'#FB923C', hair:'#111827', skin:'#F2C9A0', line:'rgba(17,24,39,.85)', item:'#22C55E'};
+  if(A === 'R'){ pal.suit = '#7C83FD'; pal.bg = '#EEF2FF'; } else { pal.suit = '#F59E0B'; pal.bg = '#FFF7ED'; }
+  if(B === 'I'){ pal.accent = '#38BDF8'; } else { pal.accent = '#A78BFA'; }
+  if(C === 'H'){ pal.item = '#EF4444'; } else { pal.item = '#22C55E'; }
+  return pal;
+}
+function iconByCode(code){
+  const [A,B,C,D] = code.split('');
+  const core = (C === 'E')
+    ? { path:'M22 34c10-2 16-10 16-20C26 16 18 22 16 34c2 0 4 0 6 0z' }
+    : { path:'M32 40s-12-7-16-14c-4-7 3-14 10-10 3 2 6 2 6 2s3 0 6-2c7-4 14 3 10 10-4 7-16 14-16 14z' };
+  const stance = (D === 'A') ? 'action' : 'shield';
+  const badge = (B === 'I') ? 'star' : 'group';
+  return { core, stance, badge };
+}
+function makeAvatarSVG(code){
+  const p = paletteByCode(code);
+  const i = iconByCode(code);
+
+  const motion = i.stance === 'action'
+    ? `<path d="M18 52c-6-6-6-16 0-22" fill="none" stroke="${p.accent}" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+       <path d="M46 52c6-6 6-16 0-22" fill="none" stroke="${p.accent}" stroke-width="4" stroke-linecap="round" opacity=".75"/>`
+    : '';
+
+  const shield = i.stance === 'shield'
+    ? `<path d="M50 62c-10 0-18-6-18-6s-8 6-18 6c0 18 18 26 18 26s18-8 18-26z" fill="${p.accent}" opacity=".9"/>
+       <path d="M32 76v-14" stroke="white" stroke-width="4" stroke-linecap="round" opacity=".95"/>`
+    : '';
+
+  const badge = i.badge === 'star'
+    ? `<path d="M32 18l2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8z" fill="${p.accent}"/>`
+    : `<g fill="${p.accent}">
+         <circle cx="27" cy="18" r="3.2"/><circle cx="37" cy="18" r="3.2"/>
+         <rect x="25" y="22" width="14" height="4" rx="2"/>
+       </g>`;
+
+  const coreIcon = `<path d="${i.core.path}" fill="${p.item}" opacity=".95"/>`;
+
+  return `
+  <svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${code} 캐릭터">
+    <rect x="6" y="6" width="84" height="84" rx="18" fill="${p.bg}"/>
+    ${motion}
+    <circle cx="48" cy="38" r="16" fill="${p.skin}"/>
+    <path d="M34 34c2-10 26-12 28 2-6-6-22-6-28-2z" fill="${p.hair}" opacity=".92"/>
+    <circle cx="42" cy="40" r="2.2" fill="${p.line}"/>
+    <circle cx="54" cy="40" r="2.2" fill="${p.line}"/>
+    <path d="M43 47c3 3 7 3 10 0" fill="none" stroke="${p.line}" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M28 78c2-16 14-22 20-22s18 6 20 22" fill="${p.suit}" opacity=".95"/>
+    <path d="M38 58l10 8 10-8" fill="none" stroke="white" stroke-width="3" opacity=".9"/>
+    <g transform="translate(54 57)">
+      <circle cx="0" cy="0" r="7.5" fill="white" opacity=".9"/>
+      <g transform="translate(-6 -6) scale(.5)">${badge}</g>
+    </g>
+    <g transform="translate(16 56)">
+      <circle cx="0" cy="0" r="10" fill="white" opacity=".9"/>
+      <g transform="translate(-10 -10) scale(.5)">${coreIcon}</g>
+    </g>
+    ${shield}
+  </svg>`;
+}
+function setAvatar(el, code, small=false){
+  el.classList.toggle('small', !!small);
+  el.innerHTML = makeAvatarSVG(code);
+}
+
+/* =========================
+   1문항/페이지 렌더링
+========================= */
+let currentIndex = 0;
+const answers = new Array(questions.length).fill(null);
+
+const progressEl = document.getElementById('progress');
+const qMetaEl = document.getElementById('qMeta');
+const qTextEl = document.getElementById('qText');
+const qOptionsEl = document.getElementById('qOptions');
+
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const resultBtn = document.getElementById('resultBtn');
+
+function updateButtons(){
+  prevBtn.disabled = currentIndex === 0;
+  nextBtn.disabled = currentIndex === questions.length - 1;
+  const done = answers.every(v => v !== null);
+  resultBtn.disabled = !done;
+  if(currentIndex === questions.length - 1){
+    nextBtn.style.display = 'none';
+    resultBtn.style.display = 'inline-block';
+  } else {
+    nextBtn.style.display = 'inline-block';
+    resultBtn.style.display = 'inline-block';
+  }
+}
+
+function renderQuestion(){
+  const q = questions[currentIndex];
+  progressEl.textContent = `진행: ${currentIndex+1} / ${questions.length}`;
+  const axisLabel = (q.axis==='A') ? 'A(결과/원칙)' :
+                    (q.axis==='B') ? 'B(개인/공동체)' :
+                    (q.axis==='C') ? 'C(인간/환경·생명)' : 'D(행동/안정)';
+  qMetaEl.textContent = `영역: ${axisLabel}  ·  척도: 1(매우 그렇지 않다) ~ 7(매우 그렇다)`;
+  qTextEl.textContent = `${currentIndex+1}. ${q.t}`;
+
+  qOptionsEl.innerHTML = '';
+  scale.forEach((label, idx) => {
+    const value = idx + 1;
+    const row = document.createElement('label');
+    row.className = 'opt';
+    row.innerHTML = `<input type="radio" name="q${currentIndex}" value="${value}"><div>${value}. ${label}</div>`;
+    const input = row.querySelector('input');
+    if(answers[currentIndex] === value) input.checked = true;
+    input.addEventListener('change', () => { answers[currentIndex] = value; updateButtons(); });
+    qOptionsEl.appendChild(row);
+  });
+
+  updateButtons();
+}
+
+prevBtn.addEventListener('click', () => { if(currentIndex > 0){ currentIndex--; renderQuestion(); }});
+nextBtn.addEventListener('click', () => {
+  if(currentIndex < questions.length - 1){
+    if(answers[currentIndex] === null){ alert('이 문항에 먼저 응답해 주세요.'); return; }
+    currentIndex++; renderQuestion();
+  }
 });
+document.getElementById('startBtn').addEventListener('click', () => { showPage('page-test'); currentIndex = 0; renderQuestion(); });
 
-document.getElementById('progress').innerText = `총 ${questions.length}문항`;
+/* =========================
+   결과 산출 (pole 평균 + tie-break)
+========================= */
+const axisPairs = { A:['R','P'], B:['I','C'], C:['H','E'], D:['A','S'] };
 
-form.addEventListener('change', ()=>{
-  const answered = new Set([...form.querySelectorAll('input:checked')].map(i=>i.name));
-  document.getElementById('resultBtn').disabled = answered.size !== questions.length;
-});
+function calcAxis(axisKey){
+  const [p1, p2] = axisPairs[axisKey];
+  const items = questions.map((q, idx)=>({q, idx, v: answers[idx]})).filter(x => x.q.axis === axisKey);
+  const g1 = items.filter(x=>x.q.pole === p1);
+  const g2 = items.filter(x=>x.q.pole === p2);
+  const sum = arr => arr.reduce((a,b)=>a + b.v, 0);
+  const avg = arr => (arr.length ? sum(arr)/arr.length : 0);
+  const avg1 = avg(g1), avg2 = avg(g2);
 
-function renderDetailBars(score){
-  // 각 영역 합계: 8~56 (8문항 * 1~7)
-  const norm = (sum)=>{
-    const pct = (sum - 8) / 48 * 100;
-    return Math.max(0, Math.min(100, pct));
-  };
+  const strong = arr => arr.filter(x=>x.v >= 6).length;
+  const certainty = arr => arr.reduce((a,b)=> a + Math.abs(b.v - 4), 0);
 
-  const rows = [
-    {left:'P(원칙)', right:'R(결과)', v:norm(score.A)},
-    {left:'C(공동체)', right:'I(개인)', v:norm(score.B)},
-    {left:'E(환경·생명)', right:'H(인간)', v:norm(score.C)},
-    {left:'S(안정)', right:'A(행동)', v:norm(score.D)}
-  ];
+  let pick = (avg1 > avg2) ? p1 : (avg2 > avg1) ? p2 : null;
+  const diff = avg1 - avg2;
+  const close = Math.abs(diff) <= 0.15;
 
-  const wrap = document.getElementById('detailBars');
-  if(!wrap) return;
-  wrap.innerHTML = '';
+  if(pick === null || close){
+    const s1 = strong(g1), s2 = strong(g2);
+    if(s1 !== s2) pick = (s1 > s2) ? p1 : p2;
+    else{
+      const c1 = certainty(g1), c2 = certainty(g2);
+      if(c1 !== c2) pick = (c1 > c2) ? p1 : p2;
+      else pick = p1;
+    }
+  }
 
-  rows.forEach(r=>{
-    const row = document.createElement('div');
-    row.className = 'bar-row';
+  return { axis: axisKey, p1, p2, avg1, avg2, diff, pick, close };
+}
 
-    const l = document.createElement('div');
-    l.className = 'bar-l';
-    l.textContent = r.left;
+/* =========================
+   요소별 세부 성향 시각화
+========================= */
+const axisMeta = {
+  A:{title:'판단 기준', left:'R(결과)', right:'P(원칙)'},
+  B:{title:'사회 관점', left:'I(개인)', right:'C(공동체)'},
+  C:{title:'도덕 대상', left:'H(인간)', right:'E(환경·생명)'},
+  D:{title:'행동 태도', left:'A(행동)', right:'S(안정)'}
+};
 
-    const track = document.createElement('div');
-    track.className = 'bar-track';
+function markerPosFromDiff(diff){
+  const k = 12.5;
+  const pos = 50 + diff * k;
+  return Math.max(6, Math.min(94, pos));
+}
+function closenessTag(diff){
+  const a = Math.abs(diff);
+  if(a <= 0.15) return {txt:'중간(비슷함)', cls:'mid'};
+  if(a <= 0.45) return {txt:'조금 더 가까움', cls:(diff>0?'leanL':'leanR')};
+  if(a <= 0.8)  return {txt:'꽤 가까움', cls:(diff>0?'leanL':'leanR')};
+  return {txt:'많이 가까움', cls:(diff>0?'leanL':'leanR')};
+}
 
-    const mid = document.createElement('div');
-    mid.className = 'bar-mid';
+function renderTraits(axisResults){
+  const grid = document.getElementById('traitGrid');
+  grid.innerHTML = '';
 
-    const dot = document.createElement('div');
-    dot.className = 'bar-dot';
-    dot.style.left = r.v + '%';
+  axisResults.forEach(res=>{
+    const meta = axisMeta[res.axis];
+    const pos = markerPosFromDiff(res.diff);
+    const tag = closenessTag(res.diff);
+    const aria = `${meta.title}: ${meta.left} 평균 ${res.avg1.toFixed(2)}, ${meta.right} 평균 ${res.avg2.toFixed(2)}. 차이 ${res.diff.toFixed(2)}`;
 
-    track.appendChild(mid);
-    track.appendChild(dot);
+    const card = document.createElement('div');
+    card.className = 'trait-card';
+    card.innerHTML = `
+      <div class="trait-title">
+        <div>${meta.title} <span class="trait-axis">(${meta.left} ↔ ${meta.right})</span></div>
+        <span class="tag ${tag.cls}">${tag.txt}</span>
+      </div>
 
-    const rr = document.createElement('div');
-    rr.className = 'bar-r';
-    rr.textContent = r.right;
+      <div class="bar" role="img" aria-label="${aria}">
+        <div class="mid"></div>
+        <div class="marker" style="left:${pos}%"></div>
+      </div>
 
-    row.appendChild(l);
-    row.appendChild(track);
-    row.appendChild(rr);
+      <div class="barlabel">
+        <span>← ${meta.left}</span>
+        <span>${meta.right} →</span>
+      </div>
 
-    wrap.appendChild(row);
+      <div class="closeness">
+        ${res.diff > 0.15 ? `${meta.left} 쪽에 더 가까움` :
+           res.diff < -0.15 ? `${meta.right} 쪽에 더 가까움` :
+           `두 성향이 비슷함`}
+      </div>
+      <div class="hint">가까움은 “두 성향 평균의 차이”를 바탕으로 정성적으로 표시됩니다.</div>
+    `;
+    grid.appendChild(card);
   });
 }
 
-const typeDB = {
-  // R I H A 계열
-  'RIHA':{name:'실천적 개인 판단자',desc:'개인의 자유를 중시하면서 결과가 좋다면 적극적으로 행동하는 유형입니다. 사회 문제를 자신의 선택과 책임의 문제로 인식하며, 필요하다면 직접 행동에 나서려는 경향이 강합니다.',thinkers:['존 스튜어트 밀','존 듀이'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'RIHS':{name:'신중한 개인 판단자',desc:'개인의 자유와 결과를 중시하지만, 급격한 변화보다는 질서와 안정을 함께 고려하는 유형입니다.',thinkers:['롤즈'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'RIEA':{name:'환경 감수성 개인 행동가',desc:'개인의 선택이 환경과 생명에 미치는 영향을 중요하게 여기며 적극적인 실천을 선호합니다.',thinkers:['피터 싱어'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'RIES':{name:'환경 고려 개인 신중가',desc:'환경 문제의 중요성은 인식하지만 점진적 변화를 선호하는 유형입니다.',thinkers:['밀'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
+/* =========================
+   ✅ 결과 제출을 위한 "최근 결과" 보관
+   - 결과 확인을 눌러야 submit 가능(지금 구조에 맞춤)
+========================= */
+let lastResultPayload = null;
 
-  // R C 계열
-  'RCHA':{name:'공동체 개혁 실천가',desc:'공동체 전체의 이익을 위해 적극적인 사회 변화를 추구하는 유형입니다.',thinkers:['듀이'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'RCHS':{name:'공동체 현실 관리자',desc:'공동체의 이익을 중시하되 사회 질서와 안정을 함께 고려합니다.',thinkers:['벤담'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'RCEA':{name:'환경 중심 공동체 행동가',desc:'환경 보호를 공동체의 책임으로 인식하고 실천을 중시합니다.',thinkers:['알도 레오폴드'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'RCES':{name:'환경 정책 조정자',desc:'환경 보호와 사회적 합의를 함께 고려하는 유형입니다.',thinkers:['밀'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
+function buildSubmitPayload(){
+  if(!lastResultPayload) return null;
 
-  // P I 계열
-  'PIHA':{name:'원칙적 개인 실천가',desc:'개인의 권리와 도덕적 원칙을 지키기 위해 행동하는 유형입니다.',thinkers:['칸트','간디'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'PIHS':{name:'원칙적 개인 성찰자',desc:'원칙과 개인의 권리를 신중하게 고려하며 판단하는 유형입니다.',thinkers:['칸트'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'PIEA':{name:'환경 권리 옹호자',desc:'자연과 생명의 권리를 도덕적으로 옹호하며 행동합니다.',thinkers:['테일러'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'PIES':{name:'환경 존중 원칙가',desc:'환경 보호의 가치를 인정하면서도 제도적 접근을 선호합니다.',thinkers:['밀'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
+  // 최소한의 핵심만 전송(필요하면 GAS에서 컬럼 늘려도 됨)
+  return {
+    ...lastResultPayload,
+    appVersion: APP_VERSION,
+    userAgent: navigator.userAgent,
+    submittedAt: new Date().toISOString()
+  };
+}
 
-  // P C 계열
-  'PCHA':{name:'도덕적 공동체 행동가',desc:'공동체의 도덕적 가치를 지키기 위해 행동이 필요하다고 믿는 유형입니다.',thinkers:['마틴 루서 킹'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'PCHS':{name:'질서 중심 공동체 수호자',desc:'사회 규범과 질서를 최우선으로 여기며 안정된 사회를 선호합니다.',thinkers:['뒤르켐','공자'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'PCEA':{name:'원칙 기반 공동체 개혁가',desc:'정의로운 공동체를 만들기 위한 제도적 개혁에 관심이 많습니다.',thinkers:['롤즈'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]},
-  'PCES':{name:'전통 존중 공동체 관리자',desc:'전통과 관습의 가치를 중시하며 점진적 변화를 선호합니다.',thinkers:['헤겔'],issues:[
-  {title:'시민 참여',desc:'개인이 사회 문제에 직접 참여하는 것이 왜 중요한지 고민하게 하는 주제입니다.'},
-  {title:'기본소득',desc:'사회적 안전망과 개인의 책임 사이의 균형을 생각하게 합니다.'},
-  {title:'표현의 자유',desc:'자유로운 의견 표현이 사회에 미치는 긍정적·부정적 영향을 함께 다룹니다.'}
-]}
-};
+async function submitResult(){
+  const btn = document.getElementById('submitBtn');
+  if(!lastResultPayload){
+    alert('먼저 "결과 확인"을 눌러 결과를 만든 뒤 제출해 주세요.');
+    return;
+  }
 
+  const payload = buildSubmitPayload();
+
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '전송 중...';
+
+  try{
+    const res = await fetch(GAS_WEBAPP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    // GAS가 JSON 또는 텍스트로 응답해도 OK
+    const text = await res.text();
+
+    if(!res.ok){
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    btn.textContent = '완료';
+    setTimeout(()=>{ btn.textContent = originalText; btn.disabled = false; }, 800);
+  }catch(err){
+    console.error(err);
+    alert('전송에 실패했습니다. (네트워크/권한/CORS 설정을 확인해 주세요)');
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+document.getElementById('submitBtn').addEventListener('click', submitResult);
+
+/* =========================
+   결과 계산 + 렌더링
+========================= */
 function calculateResult(){
-  const data = new FormData(form);
-  let score = {A:0,B:0,C:0,D:0};
-  let values = [];
-  questions.forEach((q,idx)=>{ const v=Number(data.get('q'+idx)); score[q.area]+=v; values.push(v); });
+  if(!answers.every(v => v !== null)){
+    alert('모든 문항에 응답해야 결과를 확인할 수 있습니다.');
+    return;
+  }
 
-  const A = score.A/8 >= 4 ? 'R':'P';
-  const B = score.B/8 >= 4 ? 'I':'C';
-  const C = score.C/8 >= 4 ? 'H':'E';
-  const D = score.D/8 >= 4 ? 'A':'S';
+  const aRes = calcAxis('A');
+  const bRes = calcAxis('B');
+  const cRes = calcAxis('C');
+  const dRes = calcAxis('D');
 
-  const type = A+B+C+D;
-  const dataRow = typeDB[type];
+  const code = aRes.pick + bRes.pick + cRes.pick + dRes.pick;
+  const data = typeDB[code];
 
-  document.getElementById('typeCode').innerText = `유형 코드: ${type}`;
-  document.getElementById('typeName').innerText = dataRow?.name || '혼합 윤리 성향';
-  document.getElementById('typeDesc').innerText = dataRow?.desc || '여러 윤리적 관점이 고르게 나타나는 유형입니다.';
+  document.getElementById('typeCode').textContent = `유형 코드: ${code}`;
+  document.getElementById('typeName').textContent = data.name;
+  setAvatar(document.getElementById('typeAvatar'), code, false);
+  document.getElementById('typeDesc').textContent = data.desc;
 
-  // 요소별 세부 성향 그래프 렌더링
-  renderDetailBars(score);
- 
+  // ✅ (추가) 제출용 payload 저장
+  lastResultPayload = {
+    typeCode: code,
+    typeName: data.name,
+    axis: {
+      A: { pick: aRes.pick, diff: aRes.diff, avgLeft: aRes.avg1, avgRight: aRes.avg2 },
+      B: { pick: bRes.pick, diff: bRes.diff, avgLeft: bRes.avg1, avgRight: bRes.avg2 },
+      C: { pick: cRes.pick, diff: cRes.diff, avgLeft: cRes.avg1, avgRight: cRes.avg2 },
+      D: { pick: dRes.pick, diff: dRes.diff, avgLeft: dRes.avg1, avgRight: dRes.avg2 }
+    },
+    answers: [...answers]
+  };
 
-  const ulI = document.getElementById('typeIssues'); ulI.innerHTML='';
-  (dataRow?.issues||[]).forEach(i=>{const li=document.createElement('li');li.innerHTML=`<strong>${i.title}</strong><br>${i.desc}`;ulI.appendChild(li);});
+  // 경고
+  const warn = document.getElementById('warnBox');
+  warn.innerHTML = '';
+  const neutral = answers.filter(v=>v===4).length;
+  const maxSame = Math.max(...[1,2,3,4,5,6,7].map(n => answers.filter(v=>v===n).length));
+  if(neutral/answers.length >= 0.33) warn.innerHTML += '<div class="notice">중립(4) 응답이 많은 편입니다. 일부 문항은 조금 더 생각해 보고 다시 해도 좋아요.</div>';
+  if(maxSame/answers.length >= 0.66) warn.innerHTML += '<div class="notice">같은 번호 선택이 많이 반복되었습니다. 결과가 실제 생각과 다를 수 있어요. 가능하면 다시 응답해 보세요.</div>';
 
-  const ulT = document.getElementById('typeThinkers'); ulT.innerHTML='';
-  (dataRow?.thinkers||[]).forEach(t=>{const li=document.createElement('li');li.innerText=t;ulT.appendChild(li);});
+  // 접전 축 안내
+  const closeAxes = [aRes,bRes,cRes,dRes].filter(x=>x.close);
+  if(closeAxes.length){
+    const txt = closeAxes.map(x=>{
+      const axisName = (x.axis==='A')?'A(결과/원칙)' : (x.axis==='B')?'B(개인/공동체)' : (x.axis==='C')?'C(인간/환경·생명)' : 'D(행동/안정)';
+      return `${axisName} 축이 비슷하게 나왔어요.`;
+    }).join(' ');
+    warn.innerHTML += `<div class="notice">${txt} 이 축의 문항을 다시 읽어보고 “내 생각에 더 가까운 쪽”으로 답했는지 확인해 보세요.</div>`;
+  }
 
-  const extreme = values.filter(v=>v===1||v===7).length;
-  const neutral = values.filter(v=>v===4).length;
-  const notice = document.getElementById('resultNotice'); notice.style.display='none';
-  if(extreme/values.length>=0.6){notice.innerText='응답이 한쪽으로 매우 치우쳐 있습니다. 문항을 다시 한 번 충분히 고민해 보세요.';notice.style.display='block';}
-  else if(neutral/values.length>=0.4){notice.innerText='중립 응답이 많습니다. 판단을 유보한 문항이 많을 수 있습니다.';notice.style.display='block';}
+  // 요소별 세부 성향(시각화) 렌더
+  renderTraits([aRes,bRes,cRes,dRes]);
 
-  document.getElementById('codeExplain').innerHTML = document.querySelector('#page-main .code-box').innerHTML;
+  // 주제/사상가
+  const ulI = document.getElementById('typeIssues'); ulI.innerHTML = '';
+  data.issues.forEach(i => { const li=document.createElement('li'); li.textContent=i; ulI.appendChild(li); });
+
+  const ulT = document.getElementById('typeThinkers'); ulT.innerHTML = '';
+  data.thinkers.forEach(t => { const li=document.createElement('li'); li.textContent=t; ulT.appendChild(li); });
+
+  // 코드 설명 복사
+  document.getElementById('codeExplain').innerHTML =
+    document.querySelector('#page-main .code-box').innerHTML;
+
   showPage('page-result');
 }
-</script>
+document.getElementById('resultBtn').addEventListener('click', calculateResult);
 
+/* =========================
+   전체 유형 페이지 (모바일 반응형 카드)
+========================= */
+const all = document.getElementById('allTypes');
+function renderAllTypes(){
+  all.innerHTML = '';
+  Object.entries(typeDB).forEach(([k,v])=>{
+    const box = document.createElement('div');
+    box.className = 'card type-card';
+
+    const avatarWrap = document.createElement('div');
+    avatarWrap.className = 'avatar small';
+    setAvatar(avatarWrap, k, true);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    const codeEl = document.createElement('div');
+    codeEl.className = 'type-code';
+    codeEl.textContent = k;
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'type-name';
+    nameEl.textContent = v.name;
+
+    const descEl = document.createElement('p');
+    descEl.className = 'type-desc';
+    descEl.textContent = v.desc;
+
+    meta.appendChild(codeEl);
+    meta.appendChild(nameEl);
+    meta.appendChild(descEl);
+
+    box.appendChild(avatarWrap);
+    box.appendChild(meta);
+    all.appendChild(box);
+  });
+}
+renderAllTypes();
+</script>
 </body>
 </html>
