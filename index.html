@@ -306,6 +306,30 @@
 ========================= */
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImOT1XpsFogJdFXYrXY14q3Cq3hEn1YuTwAJWoD8DSiir9092y_8JAkg/exec";
 
+async function submitResult(payloadObj){
+  // payloadObj는 {version, code, A_side, ...} 형태라고 가정
+  const body = new URLSearchParams();
+  body.set("payload", JSON.stringify(payloadObj));
+
+  try{
+    // ✅ preflight 회피: form + no-cors
+    await fetch(GAS_WEBAPP_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+      },
+      body
+    });
+
+    // no-cors에서는 응답 확인이 불가(opaque) -> "전송 시도 성공"으로 처리
+    return true;
+  }catch(e){
+    console.error(e);
+    return false;
+  }
+}
+
 /* =========================
    코드 버전
 ========================= */
