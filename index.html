@@ -20,28 +20,11 @@
   .code-box{background:#eef2ff;padding:16px;border-radius:10px;margin-top:16px}
   ul{line-height:1.8}
 
-  .avatar{
-  display:flex;
-  justify-content:center;
-  margin:14px 0 6px;
-}
-.avatar svg{
-  width:160px;
-  height:160px;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.10));
-}
-.avatar.small svg{
-  width:110px;
-  height:110px;
-}
-.type-card{
-  display:flex;
-  gap:14px;
-  align-items:flex-start;
-}
-.type-card .meta{
-  flex:1;
-}
+  .avatar{display:flex;justify-content:center;margin:14px 0 6px}
+  .avatar svg{width:160px;height:160px;filter: drop-shadow(0 6px 10px rgba(0,0,0,.10))}
+  .avatar.small svg{width:110px;height:110px}
+  .type-card{display:flex;gap:14px;align-items:flex-start}
+  .type-card .meta{flex:1}
 
   /* 메인 버전 표기 */
   .version{
@@ -64,7 +47,6 @@
   .opt:hover{background:#f8fafc}
   .opt input{margin-top:3px}
   .smallhint{color:#6b7280;font-size:13px;margin-top:6px}
-  .center{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
   .muted{color:#6b7280}
 </style>
 </head>
@@ -138,8 +120,8 @@
     <div class="code-box" id="codeExplain"></div>
 
     <div class="btnrow">
-      <button onclick="location.reload()">다시 검사하기</button>
-      <button onclick="showPage('page-all')">모든 유형 확인하기</button>
+      <button type="button" id="restartBtn">다시 검사하기</button>
+      <button type="button" id="allTypesBtn">모든 유형 확인하기</button>
     </div>
   </div>
 </div>
@@ -150,12 +132,12 @@
     <h2>16가지 윤리 성향 유형 한눈에 보기</h2>
     <div id="allTypes"></div>
     <div class="btnrow">
-      <button onclick="showPage('page-result')">결과로 돌아가기</button>
+      <button type="button" id="backToResultBtn">결과로 돌아가기</button>
     </div>
   </div>
 </div>
 
-<!-- (1) 버전 표기 -->
+<!-- 버전 표기 -->
 <div class="version" id="versionTag"></div>
 
 <script>
@@ -220,8 +202,7 @@ const questions=[
 ];
 
 /* =========================
-   (4) 16유형 DB: desc 누락/깨짐 방지
-   - desc는 모두 텍스트로 안전 출력
+   16유형 DB
 ========================= */
 const typeDB={
   RIHA:{name:'실천적 개인 판단자',desc:'이 유형은 도덕 판단에서 행동의 결과(R)를 가장 중요한 기준으로 삼습니다. 규칙이나 전통보다 실제로 어떤 효과가 나타나는지를 중시하며, 판단의 출발점은 개인의 선택과 책임(I)에 놓여 있습니다. 도덕적 고려의 중심은 인간(H)이며, 사람들의 행복과 고통을 기준으로 상황을 해석하는 경향이 강합니다. 문제를 인식하면 생각에 그치지 않고 직접 행동(A)으로 옮기려는 태도가 뚜렷합니다. 그래서 사회 문제를 개인의 실천으로 바꿀 수 있다고 믿고, 일상 속 선택의 윤리성을 중요하게 여깁니다.',issues:['시민 참여: 개인의 행동이 사회를 바꿀 수 있는가','표현의 자유: 어디까지 허용되어야 하는가','기본소득: 개인의 선택과 사회적 책임'],thinkers:['존 스튜어트 밀','존 듀이']},
@@ -244,15 +225,12 @@ const typeDB={
   PCEA:{name:'생태 규범 공동체 행동가',desc:'이 유형은 생태·환경(E)을 보호해야 한다는 원칙(P)을 공동체(C) 차원에서 실행해야 한다고 봅니다. 개인 실천만으로는 한계가 있으므로 사회적 규범과 제도 설계가 필요하다고 생각합니다. 도덕적 고려는 인간(H)만이 아니라 생태 공동체 전체로 확장되며, 공동 책임을 강조합니다. 필요하다고 판단되면 행동(A)을 통해 규범을 만들고 강화하려는 경향이 있습니다. 환경 보호를 ‘공동체의 규칙’으로 정착시키려는 의지가 강한 유형입니다.',issues:['환경 규범: 법·제도의 역할','기업 책임: 규칙의 강제력','생태 전환: 공동체 행동 전략'],thinkers:['알도 레오폴드','폴 테일러']},
   PCES:{name:'생태 규범 공동체 신중가',desc:'이 유형은 환경·생명(E)을 존중해야 한다는 원칙(P)을 인정하면서도, 공동체(C)가 감당 가능한 방식으로 변화해야 한다고 봅니다. 도덕적 기준은 분명하지만, 실행은 안정과 지속(S)이 담보되어야 오래 간다고 생각합니다. 생태적 가치가 중요하더라도 사회적 충격과 갈등을 최소화하는 설계가 필요하다고 봅니다. 그래서 합의 과정, 단계적 전환, 제도적 보완을 중시합니다. 장기적 생태 질서를 위해 ‘신중한 전환’을 선호하는 유형입니다.',issues:['환경 갈등 조정: 합의의 기술','정책 단계화: 충격 완화 설계','지속가능성: 장기 운영 전략'],thinkers:['존 롤즈','알도 레오폴드']}
 };
-// ===== 캐릭터(오리지널) SVG 생성기 =====
-// 16personalities "분위기"만 참고한 완전 신규 디자인: 파스텔 + 플랫 + 심플
-function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
 
+/* =========================
+   캐릭터(오리지널) SVG 생성기
+========================= */
 function paletteByCode(code){
-  // 코드 4글자: (R/P)(I/C)(H/E)(A/S)
   const [A,B,C,D] = code.split('');
-
-  // 베이스 팔레트(파스텔)
   const pal = {
     bg: '#EEF2FF',
     suit: '#7C83FD',
@@ -262,45 +240,32 @@ function paletteByCode(code){
     line: 'rgba(17,24,39,.85)',
     item: '#22C55E'
   };
+  if(A === 'R'){ pal.suit = '#7C83FD'; pal.bg = '#EEF2FF'; }
+  else        { pal.suit = '#F59E0B'; pal.bg = '#FFF7ED'; }
 
-  // A: R/P -> suit 색 계열 변주
-  if(A === 'R'){ pal.suit = '#7C83FD'; pal.bg = '#EEF2FF'; }      // 쿨톤
-  else         { pal.suit = '#F59E0B'; pal.bg = '#FFF7ED'; }      // 웜톤
+  if(B === 'I'){ pal.accent = '#38BDF8'; }
+  else        { pal.accent = '#A78BFA'; }
 
-  // B: I/C -> accent(엠블럼) 변주
-  if(B === 'I'){ pal.accent = '#38BDF8'; } // 개인: 하늘색
-  else         { pal.accent = '#A78BFA'; } // 공동체: 보라
+  if(C === 'H'){ pal.item = '#EF4444'; }
+  else        { pal.item = '#22C55E'; }
 
-  // C: H/E -> item(아이콘) 변주
-  if(C === 'H'){ pal.item = '#EF4444'; }   // 인간: 레드
-  else         { pal.item = '#22C55E'; }   // 환경: 그린
-
-  // D: A/S -> 동세/방패 변주
-  // (색은 유지하되 소품/포즈에서 차이)
   return pal;
 }
 
 function iconByCode(code){
   const [A,B,C,D] = code.split('');
-  // C: H/E 아이콘
   const core = (C === 'E')
     ? { label:'leaf',  path:'M22 34c10-2 16-10 16-20C26 16 18 22 16 34c2 0 4 0 6 0z' }
     : { label:'heart', path:'M32 40s-12-7-16-14c-4-7 3-14 10-10 3 2 6 2 6 2s3 0 6-2c7-4 14 3 10 10-4 7-16 14-16 14z' };
-
-  // D: A/S 소품
   const stance = (D === 'A') ? 'action' : 'shield';
-
-  // B: I/C 뱃지 모양
   const badge = (B === 'I') ? 'star' : 'group';
-
   return { core, stance, badge, isR:(A==='R'), isA:(D==='A') };
 }
 
-function makeAvatarSVG(code, size=160){
+function makeAvatarSVG(code){
   const p = paletteByCode(code);
   const i = iconByCode(code);
 
-  // 포즈/소품 차이
   const motion = i.stance === 'action'
     ? `<path d="M18 52c-6-6-6-16 0-22" fill="none" stroke="${p.accent}" stroke-width="4" stroke-linecap="round" opacity=".75"/>
        <path d="M46 52c6-6 6-16 0-22" fill="none" stroke="${p.accent}" stroke-width="4" stroke-linecap="round" opacity=".75"/>`
@@ -320,45 +285,25 @@ function makeAvatarSVG(code, size=160){
 
   const coreIcon = `<path d="${i.core.path}" fill="${p.item}" opacity=".95"/>`;
 
-  // SVG(완전 오리지널 캐릭터)
   return `
   <svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${code} 캐릭터">
-    <!-- 배경 -->
     <rect x="6" y="6" width="84" height="84" rx="18" fill="${p.bg}"/>
     ${motion}
-
-    <!-- 머리 -->
     <circle cx="48" cy="38" r="16" fill="${p.skin}"/>
     <path d="M34 34c2-10 26-12 28 2-6-6-22-6-28-2z" fill="${p.hair}" opacity=".92"/>
-
-    <!-- 눈 -->
     <circle cx="42" cy="40" r="2.2" fill="${p.line}"/>
     <circle cx="54" cy="40" r="2.2" fill="${p.line}"/>
-
-    <!-- 입 -->
     <path d="M43 47c3 3 7 3 10 0" fill="none" stroke="${p.line}" stroke-width="2.5" stroke-linecap="round"/>
-
-    <!-- 상의 -->
     <path d="M28 78c2-16 14-22 20-22s18 6 20 22" fill="${p.suit}" opacity=".95"/>
     <path d="M38 58l10 8 10-8" fill="none" stroke="white" stroke-width="3" opacity=".9"/>
-
-    <!-- 뱃지 -->
     <g transform="translate(54 57)">
       <circle cx="0" cy="0" r="7.5" fill="white" opacity=".9"/>
-      <g transform="translate(-6 -6) scale(.5)">
-        ${badge}
-      </g>
+      <g transform="translate(-6 -6) scale(.5)">${badge}</g>
     </g>
-
-    <!-- 가치 아이콘(Heart/Leaf) -->
     <g transform="translate(16 56)">
       <circle cx="0" cy="0" r="10" fill="white" opacity=".9"/>
-      <g transform="translate(-10 -10) scale(.5)">
-        ${coreIcon}
-      </g>
+      <g transform="translate(-10 -10) scale(.5)">${coreIcon}</g>
     </g>
-
-    <!-- 안정형이면 방패 -->
     ${shield}
   </svg>`;
 }
@@ -367,9 +312,9 @@ function setAvatar(el, code, small=false){
   el.classList.toggle('small', !!small);
   el.innerHTML = makeAvatarSVG(code);
 }
-  
+
 /* =========================
-   (2)(3) 1문항/페이지 렌더링
+   1문항/페이지 렌더링
 ========================= */
 let currentIndex = 0;
 const answers = new Array(questions.length).fill(null);
@@ -387,11 +332,9 @@ function updateButtons(){
   prevBtn.disabled = currentIndex === 0;
   nextBtn.disabled = currentIndex === questions.length - 1;
 
-  // 모든 문항 응답 완료 시 결과 버튼 활성화
   const done = answers.every(v => v !== null);
   resultBtn.disabled = !done;
 
-  // 마지막 문항이면 다음 버튼 숨기고 결과 버튼 강조(선택)
   if(currentIndex === questions.length - 1){
     nextBtn.style.display = 'none';
     resultBtn.style.display = 'inline-block';
@@ -418,11 +361,9 @@ function renderQuestion(){
       <div>${value}. ${label}</div>
     `;
 
-    // 저장된 답이 있으면 체크
     const input = row.querySelector('input');
     if(answers[currentIndex] === value) input.checked = true;
 
-    // 클릭/변경 시 answers 업데이트
     input.addEventListener('change', () => {
       answers[currentIndex] = value;
       updateButtons();
@@ -440,9 +381,9 @@ prevBtn.addEventListener('click', () => {
     renderQuestion();
   }
 });
+
 nextBtn.addEventListener('click', () => {
   if(currentIndex < questions.length - 1){
-    // 답 안하면 다음 못 가게(집중도↑)
     if(answers[currentIndex] === null){
       alert('이 문항에 먼저 응답해 주세요.');
       return;
@@ -462,7 +403,6 @@ document.getElementById('startBtn').addEventListener('click', () => {
    결과 계산
 ========================= */
 function calculateResult(){
-  // 안전장치: 모두 응답했는지 확인
   if(!answers.every(v => v !== null)){
     alert('모든 문항에 응답해야 결과를 확인할 수 있습니다.');
     return;
@@ -471,24 +411,25 @@ function calculateResult(){
   let scores = {A:0,B:0,C:0,D:0};
   answers.forEach((v, i) => { scores[questions[i].a] += v; });
 
-  // A/B/C/D 각각 8문항 * 1~7점 => 합계 8~56
-  // 기준: 평균 4점(중립) 이상이면 전자(R/I/H/A), 미만이면 후자(P/C/E/S)
   const code =
     (scores.A >= 32 ? 'R' : 'P') +
     (scores.B >= 32 ? 'I' : 'C') +
     (scores.C >= 32 ? 'H' : 'E') +
     (scores.D >= 32 ? 'A' : 'S');
 
-  const data = typeDB[code]; // 16유형 모두 있으므로 undefined 방지됨
+  // 안정성: 혹시라도 typeDB 누락 시 앱이 죽지 않게 fallback 제공
+  const data = typeDB[code] || {
+    name:'윤리 성향 탐색형',
+    desc:'데이터 누락으로 인해 임시 유형으로 표시되었습니다. (typeDB의 키/구성을 확인해 주세요.)',
+    issues:['(데이터 없음)'],
+    thinkers:['(데이터 없음)']
+  };
 
   document.getElementById('typeCode').textContent = `유형 코드: ${code}`;
   document.getElementById('typeName').textContent = data.name;
   setAvatar(document.getElementById('typeAvatar'), code, false);
-
-  // (4) desc 누락/깨짐 방지: textContent로 안전 출력
   document.getElementById('typeDesc').textContent = data.desc;
 
-  // 경고 박스(요청사항 유지)
   const warn = document.getElementById('warnBox');
   warn.innerHTML = '';
   const neutral = answers.filter(v=>v===4).length;
@@ -496,10 +437,9 @@ function calculateResult(){
   if(neutral/answers.length >= 0.33) warn.innerHTML += '<div class="notice">중립 응답 비율이 높습니다. 일부 문항을 다시 고민해 보세요.</div>';
   if(maxSame/answers.length >= 0.66) warn.innerHTML += '<div class="notice">응답이 한쪽으로 치우쳐 있습니다. 신중한 응답을 권장합니다.</div>';
 
-  // 주제/사상가 렌더링
   const ulI = document.getElementById('typeIssues');
   ulI.innerHTML = '';
-  data.issues.forEach(i => {
+  (data.issues || []).forEach(i => {
     const li = document.createElement('li');
     li.textContent = i;
     ulI.appendChild(li);
@@ -507,13 +447,12 @@ function calculateResult(){
 
   const ulT = document.getElementById('typeThinkers');
   ulT.innerHTML = '';
-  data.thinkers.forEach(t => {
+  (data.thinkers || []).forEach(t => {
     const li = document.createElement('li');
     li.textContent = t;
     ulT.appendChild(li);
   });
 
-  // 코드 설명 복사
   document.getElementById('codeExplain').innerHTML =
     document.querySelector('#page-main .code-box').innerHTML;
 
@@ -523,45 +462,23 @@ function calculateResult(){
 resultBtn.addEventListener('click', calculateResult);
 
 /* =========================
-   전체 유형 페이지 (코드·별칭·설명만)
+   전체 유형 페이지 (코드·별칭·설명 + 캐릭터)
+   ✅ 버그 수정: 중복 선언/중복 append 완전 제거
 ========================= */
 const all = document.getElementById('allTypes');
+
 function renderAllTypes(){
   all.innerHTML = '';
   Object.entries(typeDB).forEach(([k,v])=>{
-const box = document.createElement('div');
-box.className = 'card type-card';
+    const box = document.createElement('div');
+    box.className = 'card type-card';
 
-const avatarWrap = document.createElement('div');
-avatarWrap.className = 'avatar small';
-setAvatar(avatarWrap, k, true);
+    const avatarWrap = document.createElement('div');
+    avatarWrap.className = 'avatar small';
+    setAvatar(avatarWrap, k, true);
 
-const meta = document.createElement('div');
-meta.className = 'meta';
-
-const codeEl = document.createElement('div');
-codeEl.style.fontWeight = '800';
-codeEl.style.fontSize = '18px';
-codeEl.textContent = k;
-
-const nameEl = document.createElement('div');
-nameEl.style.fontWeight = '700';
-nameEl.style.marginTop = '6px';
-nameEl.textContent = v.name;
-
-const descEl = document.createElement('p');
-descEl.style.marginTop = '10px';
-descEl.style.lineHeight = '1.8';
-descEl.style.whiteSpace = 'pre-line';
-descEl.textContent = v.desc;
-
-meta.appendChild(codeEl);
-meta.appendChild(nameEl);
-meta.appendChild(descEl);
-
-box.appendChild(avatarWrap);
-box.appendChild(meta);
-all.appendChild(box);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
 
     const codeEl = document.createElement('div');
     codeEl.style.fontWeight = '800';
@@ -577,14 +494,31 @@ all.appendChild(box);
     descEl.style.marginTop = '10px';
     descEl.style.lineHeight = '1.8';
     descEl.style.whiteSpace = 'pre-line';
-    descEl.textContent = v.desc; // 안전 출력
+    descEl.textContent = v.desc;
 
-    box.appendChild(codeEl);
-    box.appendChild(nameEl);
-    box.appendChild(descEl);
+    meta.appendChild(codeEl);
+    meta.appendChild(nameEl);
+    meta.appendChild(descEl);
+
+    box.appendChild(avatarWrap);
+    box.appendChild(meta);
     all.appendChild(box);
   });
 }
+
+// 버튼 동작(이벤트로 통일)
+document.getElementById('allTypesBtn').addEventListener('click', ()=>{
+  renderAllTypes();              // 항상 최신 렌더
+  showPage('page-all');
+});
+document.getElementById('backToResultBtn').addEventListener('click', ()=>{
+  showPage('page-result');
+});
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  location.reload();
+});
+
+// 초기 1회 렌더 (바로 "전체 유형 보기"로 들어가도 깨지지 않게)
 renderAllTypes();
 </script>
 </body>
