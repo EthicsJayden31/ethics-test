@@ -20,6 +20,29 @@
   .code-box{background:#eef2ff;padding:16px;border-radius:10px;margin-top:16px}
   ul{line-height:1.8}
 
+  .avatar{
+  display:flex;
+  justify-content:center;
+  margin:14px 0 6px;
+}
+.avatar svg{
+  width:160px;
+  height:160px;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.10));
+}
+.avatar.small svg{
+  width:110px;
+  height:110px;
+}
+.type-card{
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+}
+.type-card .meta{
+  flex:1;
+}
+
   /* 메인 버전 표기 */
   .version{
     position:fixed; right:14px; bottom:10px;
@@ -101,6 +124,7 @@
     <h2>검사 결과</h2>
     <div class="type" id="typeCode"></div>
     <div class="nickname" id="typeName"></div>
+    <div id="typeAvatar" class="avatar"></div>
     <div id="warnBox"></div>
     <p id="typeDesc" style="line-height:1.9; white-space:pre-line;"></p>
 
@@ -220,7 +244,130 @@ const typeDB={
   PCEA:{name:'생태 규범 공동체 행동가',desc:'이 유형은 생태·환경(E)을 보호해야 한다는 원칙(P)을 공동체(C) 차원에서 실행해야 한다고 봅니다. 개인 실천만으로는 한계가 있으므로 사회적 규범과 제도 설계가 필요하다고 생각합니다. 도덕적 고려는 인간(H)만이 아니라 생태 공동체 전체로 확장되며, 공동 책임을 강조합니다. 필요하다고 판단되면 행동(A)을 통해 규범을 만들고 강화하려는 경향이 있습니다. 환경 보호를 ‘공동체의 규칙’으로 정착시키려는 의지가 강한 유형입니다.',issues:['환경 규범: 법·제도의 역할','기업 책임: 규칙의 강제력','생태 전환: 공동체 행동 전략'],thinkers:['알도 레오폴드','폴 테일러']},
   PCES:{name:'생태 규범 공동체 신중가',desc:'이 유형은 환경·생명(E)을 존중해야 한다는 원칙(P)을 인정하면서도, 공동체(C)가 감당 가능한 방식으로 변화해야 한다고 봅니다. 도덕적 기준은 분명하지만, 실행은 안정과 지속(S)이 담보되어야 오래 간다고 생각합니다. 생태적 가치가 중요하더라도 사회적 충격과 갈등을 최소화하는 설계가 필요하다고 봅니다. 그래서 합의 과정, 단계적 전환, 제도적 보완을 중시합니다. 장기적 생태 질서를 위해 ‘신중한 전환’을 선호하는 유형입니다.',issues:['환경 갈등 조정: 합의의 기술','정책 단계화: 충격 완화 설계','지속가능성: 장기 운영 전략'],thinkers:['존 롤즈','알도 레오폴드']}
 };
+// ===== 캐릭터(오리지널) SVG 생성기 =====
+// 16personalities "분위기"만 참고한 완전 신규 디자인: 파스텔 + 플랫 + 심플
+function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
 
+function paletteByCode(code){
+  // 코드 4글자: (R/P)(I/C)(H/E)(A/S)
+  const [A,B,C,D] = code.split('');
+
+  // 베이스 팔레트(파스텔)
+  const pal = {
+    bg: '#EEF2FF',
+    suit: '#7C83FD',
+    accent: '#FB923C',
+    hair: '#111827',
+    skin: '#F2C9A0',
+    line: 'rgba(17,24,39,.85)',
+    item: '#22C55E'
+  };
+
+  // A: R/P -> suit 색 계열 변주
+  if(A === 'R'){ pal.suit = '#7C83FD'; pal.bg = '#EEF2FF'; }      // 쿨톤
+  else         { pal.suit = '#F59E0B'; pal.bg = '#FFF7ED'; }      // 웜톤
+
+  // B: I/C -> accent(엠블럼) 변주
+  if(B === 'I'){ pal.accent = '#38BDF8'; } // 개인: 하늘색
+  else         { pal.accent = '#A78BFA'; } // 공동체: 보라
+
+  // C: H/E -> item(아이콘) 변주
+  if(C === 'H'){ pal.item = '#EF4444'; }   // 인간: 레드
+  else         { pal.item = '#22C55E'; }   // 환경: 그린
+
+  // D: A/S -> 동세/방패 변주
+  // (색은 유지하되 소품/포즈에서 차이)
+  return pal;
+}
+
+function iconByCode(code){
+  const [A,B,C,D] = code.split('');
+  // C: H/E 아이콘
+  const core = (C === 'E')
+    ? { label:'leaf',  path:'M22 34c10-2 16-10 16-20C26 16 18 22 16 34c2 0 4 0 6 0z' }
+    : { label:'heart', path:'M32 40s-12-7-16-14c-4-7 3-14 10-10 3 2 6 2 6 2s3 0 6-2c7-4 14 3 10 10-4 7-16 14-16 14z' };
+
+  // D: A/S 소품
+  const stance = (D === 'A') ? 'action' : 'shield';
+
+  // B: I/C 뱃지 모양
+  const badge = (B === 'I') ? 'star' : 'group';
+
+  return { core, stance, badge, isR:(A==='R'), isA:(D==='A') };
+}
+
+function makeAvatarSVG(code, size=160){
+  const p = paletteByCode(code);
+  const i = iconByCode(code);
+
+  // 포즈/소품 차이
+  const motion = i.stance === 'action'
+    ? `<path d="M18 52c-6-6-6-16 0-22" fill="none" stroke="${p.accent}" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+       <path d="M46 52c6-6 6-16 0-22" fill="none" stroke="${p.accent}" stroke-width="4" stroke-linecap="round" opacity=".75"/>`
+    : '';
+
+  const shield = i.stance === 'shield'
+    ? `<path d="M50 62c-10 0-18-6-18-6s-8 6-18 6c0 18 18 26 18 26s18-8 18-26z" fill="${p.accent}" opacity=".9"/>
+       <path d="M32 76v-14" stroke="white" stroke-width="4" stroke-linecap="round" opacity=".95"/>`
+    : '';
+
+  const badge = i.badge === 'star'
+    ? `<path d="M32 18l2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8z" fill="${p.accent}"/>`
+    : `<g fill="${p.accent}">
+         <circle cx="27" cy="18" r="3.2"/><circle cx="37" cy="18" r="3.2"/>
+         <rect x="25" y="22" width="14" height="4" rx="2"/>
+       </g>`;
+
+  const coreIcon = `<path d="${i.core.path}" fill="${p.item}" opacity=".95"/>`;
+
+  // SVG(완전 오리지널 캐릭터)
+  return `
+  <svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${code} 캐릭터">
+    <!-- 배경 -->
+    <rect x="6" y="6" width="84" height="84" rx="18" fill="${p.bg}"/>
+    ${motion}
+
+    <!-- 머리 -->
+    <circle cx="48" cy="38" r="16" fill="${p.skin}"/>
+    <path d="M34 34c2-10 26-12 28 2-6-6-22-6-28-2z" fill="${p.hair}" opacity=".92"/>
+
+    <!-- 눈 -->
+    <circle cx="42" cy="40" r="2.2" fill="${p.line}"/>
+    <circle cx="54" cy="40" r="2.2" fill="${p.line}"/>
+
+    <!-- 입 -->
+    <path d="M43 47c3 3 7 3 10 0" fill="none" stroke="${p.line}" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- 상의 -->
+    <path d="M28 78c2-16 14-22 20-22s18 6 20 22" fill="${p.suit}" opacity=".95"/>
+    <path d="M38 58l10 8 10-8" fill="none" stroke="white" stroke-width="3" opacity=".9"/>
+
+    <!-- 뱃지 -->
+    <g transform="translate(54 57)">
+      <circle cx="0" cy="0" r="7.5" fill="white" opacity=".9"/>
+      <g transform="translate(-6 -6) scale(.5)">
+        ${badge}
+      </g>
+    </g>
+
+    <!-- 가치 아이콘(Heart/Leaf) -->
+    <g transform="translate(16 56)">
+      <circle cx="0" cy="0" r="10" fill="white" opacity=".9"/>
+      <g transform="translate(-10 -10) scale(.5)">
+        ${coreIcon}
+      </g>
+    </g>
+
+    <!-- 안정형이면 방패 -->
+    ${shield}
+  </svg>`;
+}
+
+function setAvatar(el, code, small=false){
+  el.classList.toggle('small', !!small);
+  el.innerHTML = makeAvatarSVG(code);
+}
+  
 /* =========================
    (2)(3) 1문항/페이지 렌더링
 ========================= */
@@ -336,6 +483,7 @@ function calculateResult(){
 
   document.getElementById('typeCode').textContent = `유형 코드: ${code}`;
   document.getElementById('typeName').textContent = data.name;
+  setAvatar(document.getElementById('typeAvatar'), code, false);
 
   // (4) desc 누락/깨짐 방지: textContent로 안전 출력
   document.getElementById('typeDesc').textContent = data.desc;
@@ -381,8 +529,40 @@ const all = document.getElementById('allTypes');
 function renderAllTypes(){
   all.innerHTML = '';
   Object.entries(typeDB).forEach(([k,v])=>{
-    const box = document.createElement('div');
-    box.className = 'card';
+const box = document.createElement('div');
+box.className = 'card type-card';
+
+const avatarWrap = document.createElement('div');
+avatarWrap.className = 'avatar small';
+setAvatar(avatarWrap, k, true);
+
+const meta = document.createElement('div');
+meta.className = 'meta';
+
+const codeEl = document.createElement('div');
+codeEl.style.fontWeight = '800';
+codeEl.style.fontSize = '18px';
+codeEl.textContent = k;
+
+const nameEl = document.createElement('div');
+nameEl.style.fontWeight = '700';
+nameEl.style.marginTop = '6px';
+nameEl.textContent = v.name;
+
+const descEl = document.createElement('p');
+descEl.style.marginTop = '10px';
+descEl.style.lineHeight = '1.8';
+descEl.style.whiteSpace = 'pre-line';
+descEl.textContent = v.desc;
+
+meta.appendChild(codeEl);
+meta.appendChild(nameEl);
+meta.appendChild(descEl);
+
+box.appendChild(avatarWrap);
+box.appendChild(meta);
+all.appendChild(box);
+
     const codeEl = document.createElement('div');
     codeEl.style.fontWeight = '800';
     codeEl.style.fontSize = '18px';
