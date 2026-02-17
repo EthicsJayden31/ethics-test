@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>윤리 성향 진단 검사</title>
+
+<!-- ✅ 캐시 완화(특히 일부 모바일/프록시 환경) -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
 <style>
   :root{
     --bg:#f5f6fa;
@@ -126,11 +132,6 @@
     color:var(--muted);
     font-weight:700;
   }
-  .barlabel span{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-  }
   .hint{
     margin-top:10px;
     color:var(--muted);
@@ -167,6 +168,16 @@
   .type-name{font-weight:800;margin-top:6px}
   .type-desc{margin-top:10px;line-height:1.8;white-space:pre-line}
 
+  /* ✅ 결과확인 버튼 강조(마지막 문항 답변 완료 시) */
+  .pulse{
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%{transform:scale(1); filter:brightness(1);}
+    50%{transform:scale(1.04); filter:brightness(1.08);}
+    100%{transform:scale(1); filter:brightness(1);}
+  }
+
   /* ===== 모바일 최적화 ===== */
   @media (max-width: 560px){
     body{padding:14px}
@@ -177,10 +188,7 @@
     .nickname{font-size:18px}
     .avatar svg{width:132px;height:132px}
     .trait-grid{grid-template-columns: 1fr; gap:10px}
-    .type-card{
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
+    .type-card{grid-template-columns: 1fr; gap: 10px;}
     .avatar.small{justify-content:flex-start}
     .avatar.small svg{width:96px;height:96px}
     .version{right:10px;bottom:8px;font-size:11px}
@@ -251,7 +259,6 @@
         <p id="typeDesc" style="line-height:1.9; white-space:pre-line; margin-top:8px;"></p>
       </div>
 
-      <!-- (1) 요소별 세부 성향 시각화 -->
       <div>
         <h3 style="margin-top:8px">요소별 세부 성향</h3>
         <div class="muted" style="text-align:center;margin-top:-6px;font-size:13px">
@@ -276,8 +283,6 @@
     <div class="btnrow">
       <button onclick="location.reload()">다시 검사하기</button>
       <button onclick="showPage('page-all')">모든 유형 확인하기</button>
-
-      <!-- ✅ (추가) 결과 수집 버튼: 문구는 "결과 제출"만 -->
       <button type="button" id="submitBtn">결과 제출</button>
     </div>
   </div>
@@ -302,40 +307,21 @@
 
 <script>
 /* =========================
-   ✅ 결과 수집용 웹앱 URL (필요 시 여기만 수정)
+   ✅ 결과 수집용 웹앱 URL
 ========================= */
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImOT1XpsFogJdFXYrXY14q3Cq3hEn1YuTwAJWoD8DSiir9092y_8JAkg/exec";
 
-function sendResultToGAS(payloadObj){
-  const body = new URLSearchParams();
-  body.set("payload", JSON.stringify(payloadObj));
-
-  // ✅ 1) sendBeacon 우선 (가장 안정적)
-  if (navigator.sendBeacon) {
-    const ok = navigator.sendBeacon(
-      GAS_WEBAPP_URL,
-      new Blob([body.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" })
-    );
-    return ok; // true/false
-  }
-
-  // ✅ 2) fallback: no-cors fetch (응답 읽지 말 것!)
-  fetch(GAS_WEBAPP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-    body
-  }).catch(console.error);
-
-  return true; // fetch는 응답 확인 불가 -> "전송 시도"로 처리
-}
-
-
 /* =========================
-   코드 버전
+   ✅ 코드 버전 (여기만 올리면 화면에도 바로 표시됩니다)
 ========================= */
-const APP_VERSION = "v2.3.0 (trait-visual + mobile layout)";
-document.getElementById("versionTag").textContent = APP_VERSION;
+const APP_VERSION = "v2.3.2 (fix: version display + result button enable)";
+
+/* ✅ 버전 표기 강제 갱신 */
+(function(){
+  const vEl = document.getElementById("versionTag");
+  const cacheHint = `${location.pathname}?v=${encodeURIComponent(APP_VERSION)}`;
+  vEl.textContent = `${APP_VERSION} · 캐시 확인용: ${cacheHint}`;
+})();
 
 /* =========================
    페이지 전환
@@ -343,6 +329,7 @@ document.getElementById("versionTag").textContent = APP_VERSION;
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 /* =========================
@@ -353,7 +340,6 @@ const scale=[
 ];
 
 const questions=[
-  /* A: 판단 기준 (R/P) */
   {t:'결과적으로 도움이 더 크면, 그 선택은 옳다고 느낀다.', axis:'A', pole:'R'},
   {t:'규칙보다 “피해를 줄이는 것”이 더 중요하다고 생각한다.', axis:'A', pole:'R'},
   {t:'상황이 급하면, 원칙을 조금 어겨서라도 문제를 해결하는 편이 낫다.', axis:'A', pole:'R'},
@@ -363,7 +349,6 @@ const questions=[
   {t:'옳은 행동은 상황이 달라도 흔들리면 안 된다고 생각한다.', axis:'A', pole:'P'},
   {t:'손해가 있어도, 원칙을 지키는 것이 중요하다고 생각한다.', axis:'A', pole:'P'},
 
-  /* B: 사회 관점 (I/C) */
   {t:'개인의 선택은 최대한 존중되어야 한다고 생각한다.', axis:'B', pole:'I'},
   {t:'“내 삶은 내가 정한다”는 생각이 강한 편이다.', axis:'B', pole:'I'},
   {t:'국가나 사회가 개인의 삶에 너무 간섭하면 안 된다고 생각한다.', axis:'B', pole:'I'},
@@ -373,7 +358,6 @@ const questions=[
   {t:'전체를 위해 개인이 양보해야 하는 상황이 있다고 생각한다.', axis:'B', pole:'C'},
   {t:'개인의 행동이 공동체에 피해를 주면 제재가 필요하다고 생각한다.', axis:'B', pole:'C'},
 
-  /* C: 도덕 대상 (H/E) */
   {t:'도덕 판단에서 가장 중요한 대상은 “사람”이라고 생각한다.', axis:'C', pole:'H'},
   {t:'사람의 안전과 생명이 환경보다 우선이라고 생각한다.', axis:'C', pole:'H'},
   {t:'동물이나 자연보다 사람의 필요가 더 중요할 때가 많다고 생각한다.', axis:'C', pole:'H'},
@@ -383,7 +367,6 @@ const questions=[
   {t:'자연과 생명은 사람에게 도움이 되지 않아도 소중하다고 생각한다.', axis:'C', pole:'E'},
   {t:'환경 보호는 선택이 아니라 “지켜야 할 책임”이라고 생각한다.', axis:'C', pole:'E'},
 
-  /* D: 행동 태도 (A/S) */
   {t:'불공정하다고 느끼면 직접 나서서 바꾸려는 편이다.', axis:'D', pole:'A'},
   {t:'옳다고 믿으면, 눈치 보지 않고 말하거나 행동하는 편이다.', axis:'D', pole:'A'},
   {t:'문제를 발견하면 “지금 할 수 있는 행동”부터 찾는 편이다.', axis:'D', pole:'A'},
@@ -395,9 +378,9 @@ const questions=[
 ];
 
 /* =========================
-   16유형 DB
+   16유형 DB (원문 그대로)
 ========================= */
-const typeDB={
+const typeDB = {
   RIHA:{name:'실천적 개인 판단자',desc:'이 유형은 도덕 판단에서 행동의 결과(R)를 가장 중요한 기준으로 삼습니다. 규칙이나 전통보다 실제로 어떤 효과가 나타나는지를 중시하며, 판단의 출발점은 개인의 선택과 책임(I)에 놓여 있습니다. 도덕적 고려의 중심은 인간(H)이며, 사람들의 행복과 고통을 기준으로 상황을 해석하는 경향이 강합니다. 문제를 인식하면 생각에 그치지 않고 직접 행동(A)으로 옮기려는 태도가 뚜렷합니다. 그래서 사회 문제를 개인의 실천으로 바꿀 수 있다고 믿고, 일상 속 선택의 윤리성을 중요하게 여깁니다.',issues:['시민 참여: 개인의 행동이 사회를 바꿀 수 있는가','표현의 자유: 어디까지 허용되어야 하는가','기본소득: 개인의 선택과 사회적 책임'],thinkers:['존 스튜어트 밀','존 듀이']},
   RIHS:{name:'신중한 개인 판단자',desc:'이 유형은 결과 중심의 판단(R)을 유지하면서도 결론을 내리기 전에 충분히 따져보는 편입니다. 개인의 자유와 선택(I)을 중요하게 여기되, 그 선택이 초래할 파장까지 함께 생각하려 합니다. 도덕적 고려의 초점은 인간(H)에 있으며, 타인의 삶과 권리 침해 여부를 민감하게 살핍니다. 다만 실행에 있어서는 즉각적인 실천보다 숙고와 조절(S)을 통해 안정적인 선택을 선호합니다. 변화의 필요성은 인정하지만, 무리한 행동이나 급격한 전환에는 거리를 두려는 경향이 있습니다.',issues:['프라이버시 vs 공익: 감시 사회의 경계','혐오 표현 규제: 자유와 피해의 균형','정책 실험: 안전한 변화는 가능한가'],thinkers:['존 롤즈','존 스튜어트 밀']},
   RIEA:{name:'환경 감수성 개인 행동가',desc:'이 유형은 결과(R)를 중시하면서도 도덕적 고려의 범위를 인간을 넘어 환경과 생명(E)으로 확장합니다. 판단의 출발은 개인의 선택(I)이며, 개인이 어떤 선택을 하느냐가 사회와 자연에 실제 영향을 준다고 봅니다. 인간 중심의 이익만이 아니라 생태계의 균형과 장기적 피해까지 고려하려는 경향이 강합니다. 문제를 인식하면 행동(A)으로 이어지는 편이라, 일상 속 실천이나 캠페인 참여에 적극적일 수 있습니다. 결과적으로 “내 선택이 자연에 남기는 흔적”을 윤리 판단의 핵심으로 삼는 성향입니다.',issues:['기후 행동: 개인 실천의 효과','동물권: 인간 이익의 한계','친환경 소비: 비용 vs 책임'],thinkers:['피터 싱어','알도 레오폴드']},
@@ -504,17 +487,46 @@ const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const resultBtn = document.getElementById('resultBtn');
 
+function allDone(){
+  return answers.every(v => v !== null);
+}
+
 function updateButtons(){
   prevBtn.disabled = currentIndex === 0;
   nextBtn.disabled = currentIndex === questions.length - 1;
-  const done = answers.every(v => v !== null);
+
+  const done = allDone();
   resultBtn.disabled = !done;
+
+  // 마지막 문항이면 다음 버튼 숨기고 결과 버튼은 항상 보이게
   if(currentIndex === questions.length - 1){
     nextBtn.style.display = 'none';
     resultBtn.style.display = 'inline-block';
   } else {
     nextBtn.style.display = 'inline-block';
     resultBtn.style.display = 'inline-block';
+    resultBtn.classList.remove('pulse');
+  }
+
+  // ✅ 마지막 문항에서 응답 완료 시 결과 버튼을 강조
+  if(currentIndex === questions.length - 1 && answers[currentIndex] !== null){
+    resultBtn.classList.add('pulse');
+    // 버튼이 화면 아래에 있으면 살짝 보이게 스크롤
+    setTimeout(()=> {
+      resultBtn.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 100);
+  } else {
+    resultBtn.classList.remove('pulse');
+  }
+}
+
+function setAnswerAndRefresh(value){
+  answers[currentIndex] = value;
+  updateButtons();
+
+  // ✅ 혹시 전체 완료되면 결과 버튼 활성화 확정(어느 페이지든)
+  if(allDone()){
+    resultBtn.disabled = false;
   }
 }
 
@@ -530,26 +542,57 @@ function renderQuestion(){
   qOptionsEl.innerHTML = '';
   scale.forEach((label, idx) => {
     const value = idx + 1;
+
     const row = document.createElement('label');
     row.className = 'opt';
     row.innerHTML = `<input type="radio" name="q${currentIndex}" value="${value}"><div>${value}. ${label}</div>`;
+
     const input = row.querySelector('input');
+
+    // 기존 답 선택 상태 복원
     if(answers[currentIndex] === value) input.checked = true;
-    input.addEventListener('change', () => { answers[currentIndex] = value; updateButtons(); });
+
+    // ✅ input change
+    input.addEventListener('change', () => {
+      setAnswerAndRefresh(value);
+    });
+
+    // ✅ 모바일에서 라벨/줄 클릭이 input change를 놓치는 케이스 보강
+    row.addEventListener('click', (e) => {
+      // 클릭 시 강제로 체크 + 답 저장
+      input.checked = true;
+      setAnswerAndRefresh(value);
+    });
+
     qOptionsEl.appendChild(row);
   });
 
   updateButtons();
 }
 
-prevBtn.addEventListener('click', () => { if(currentIndex > 0){ currentIndex--; renderQuestion(); }});
-nextBtn.addEventListener('click', () => {
-  if(currentIndex < questions.length - 1){
-    if(answers[currentIndex] === null){ alert('이 문항에 먼저 응답해 주세요.'); return; }
-    currentIndex++; renderQuestion();
+prevBtn.addEventListener('click', () => {
+  if(currentIndex > 0){
+    currentIndex--;
+    renderQuestion();
   }
 });
-document.getElementById('startBtn').addEventListener('click', () => { showPage('page-test'); currentIndex = 0; renderQuestion(); });
+
+nextBtn.addEventListener('click', () => {
+  if(currentIndex < questions.length - 1){
+    if(answers[currentIndex] === null){
+      alert('이 문항에 먼저 응답해 주세요.');
+      return;
+    }
+    currentIndex++;
+    renderQuestion();
+  }
+});
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  showPage('page-test');
+  currentIndex = 0;
+  renderQuestion();
+});
 
 /* =========================
    결과 산출 (pole 평균 + tie-break)
@@ -587,6 +630,7 @@ function calcAxis(axisKey){
 
 /* =========================
    요소별 세부 성향 시각화
+   ✅ 현재 코드 기준(diff>0 => 왼쪽(p1) 쪽) 이므로 markerPos는 50 + diff*k
 ========================= */
 const axisMeta = {
   A:{title:'판단 기준', left:'R(결과)', right:'P(원칙)'},
@@ -597,7 +641,7 @@ const axisMeta = {
 
 function markerPosFromDiff(diff){
   const k = 12.5;
-  const pos = 50 - diff * k;
+  const pos = 50 + diff * k;
   return Math.max(6, Math.min(94, pos));
 }
 function closenessTag(diff){
@@ -648,24 +692,49 @@ function renderTraits(axisResults){
 }
 
 /* =========================
-   ✅ 결과 제출을 위한 "최근 결과" 보관
-   - 결과 확인을 눌러야 submit 가능(지금 구조에 맞춤)
+   결과 제출(이전과 동일한 구조 유지)
+   - 여기서는 sendBeacon/no-cors 방식이 GAS와 제일 충돌이 적습니다.
 ========================= */
 let lastResultPayload = null;
 
+function sendResultToGAS(payloadObj){
+  const body = new URLSearchParams();
+  body.set("payload", JSON.stringify(payloadObj));
+
+  if (navigator.sendBeacon) {
+    const ok = navigator.sendBeacon(
+      GAS_WEBAPP_URL,
+      new Blob([body.toString()], { type: "application/x-www-form-urlencoded;charset=UTF-8" })
+    );
+    return ok;
+  }
+
+  fetch(GAS_WEBAPP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    body
+  }).catch(console.error);
+
+  return true;
+}
+
 function buildSubmitPayload(){
   if(!lastResultPayload) return null;
-
-  // 최소한의 핵심만 전송(필요하면 GAS에서 컬럼 늘려도 됨)
   return {
-    ...lastResultPayload,
-    appVersion: APP_VERSION,
-    userAgent: navigator.userAgent,
-    submittedAt: new Date().toISOString()
+    payload_version: 1,
+    version: APP_VERSION,
+    code: lastResultPayload.typeCode,
+    A_side: lastResultPayload.axis.A.pick, A_strength: lastResultPayload.axis.A.diff,
+    B_side: lastResultPayload.axis.B.pick, B_strength: lastResultPayload.axis.B.diff,
+    C_side: lastResultPayload.axis.C.pick, C_strength: lastResultPayload.axis.C.diff,
+    D_side: lastResultPayload.axis.D.pick, D_strength: lastResultPayload.axis.D.diff,
+    neutral_rate: lastResultPayload.neutralRate,
+    max_same_rate: lastResultPayload.maxSameRate
   };
 }
 
-async function submitResult(){
+function submitResult(){
   const btn = document.getElementById('submitBtn');
   if(!lastResultPayload){
     alert('먼저 "결과 확인"을 눌러 결과를 만든 뒤 제출해 주세요.');
@@ -673,31 +742,19 @@ async function submitResult(){
   }
 
   const payload = buildSubmitPayload();
-
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '전송 중...';
 
   try{
-    const res = await fetch(GAS_WEBAPP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-
-    // GAS가 JSON 또는 텍스트로 응답해도 OK
-    const text = await res.text();
-
-    if(!res.ok){
-      throw new Error(text || `HTTP ${res.status}`);
-    }
+    const ok = sendResultToGAS(payload);
+    if(!ok) throw new Error('sendBeacon failed');
 
     btn.textContent = '완료';
     setTimeout(()=>{ btn.textContent = originalText; btn.disabled = false; }, 800);
   }catch(err){
     console.error(err);
-    alert('전송에 실패했습니다. (네트워크/권한/CORS 설정을 확인해 주세요)');
+    alert('전송에 실패했습니다.');
     btn.textContent = originalText;
     btn.disabled = false;
   }
@@ -708,7 +765,7 @@ document.getElementById('submitBtn').addEventListener('click', submitResult);
    결과 계산 + 렌더링
 ========================= */
 function calculateResult(){
-  if(!answers.every(v => v !== null)){
+  if(!allDone()){
     alert('모든 문항에 응답해야 결과를 확인할 수 있습니다.');
     return;
   }
@@ -726,38 +783,19 @@ function calculateResult(){
   setAvatar(document.getElementById('typeAvatar'), code, false);
   document.getElementById('typeDesc').textContent = data.desc;
 
-  lastResult = {
-  code,
-  A_side: aRes.pick, A_strength: aRes.diff,
-  B_side: bRes.pick, B_strength: bRes.diff,
-  C_side: cRes.pick, C_strength: cRes.diff,
-  D_side: dRes.pick, D_strength: dRes.diff,
-  neutral_rate: neutral/answers.length,
-  max_same_rate: maxSame/answers.length
-};
-  
-  // ✅ (추가) 제출용 payload 저장
-  lastResultPayload = {
-    typeCode: code,
-    typeName: data.name,
-    axis: {
-      A: { pick: aRes.pick, diff: aRes.diff, avgLeft: aRes.avg1, avgRight: aRes.avg2 },
-      B: { pick: bRes.pick, diff: bRes.diff, avgLeft: bRes.avg1, avgRight: bRes.avg2 },
-      C: { pick: cRes.pick, diff: cRes.diff, avgLeft: cRes.avg1, avgRight: cRes.avg2 },
-      D: { pick: dRes.pick, diff: dRes.diff, avgLeft: dRes.avg1, avgRight: dRes.avg2 }
-    },
-    answers: [...answers]
-  };
-
-  // 경고
+  // 경고(중립/반복)
   const warn = document.getElementById('warnBox');
   warn.innerHTML = '';
   const neutral = answers.filter(v=>v===4).length;
   const maxSame = Math.max(...[1,2,3,4,5,6,7].map(n => answers.filter(v=>v===n).length));
-  if(neutral/answers.length >= 0.33) warn.innerHTML += '<div class="notice">중립(4) 응답이 많은 편입니다. 일부 문항은 조금 더 생각해 보고 다시 해도 좋아요.</div>';
-  if(maxSame/answers.length >= 0.66) warn.innerHTML += '<div class="notice">같은 번호 선택이 많이 반복되었습니다. 결과가 실제 생각과 다를 수 있어요. 가능하면 다시 응답해 보세요.</div>';
 
-  // 접전 축 안내
+  if(neutral/answers.length >= 0.33){
+    warn.innerHTML += '<div class="notice">중립(4) 응답이 많은 편입니다. 일부 문항은 조금 더 생각해 보고 다시 해도 좋아요.</div>';
+  }
+  if(maxSame/answers.length >= 0.66){
+    warn.innerHTML += '<div class="notice">같은 번호 선택이 많이 반복되었습니다. 결과가 실제 생각과 다를 수 있어요. 가능하면 다시 응답해 보세요.</div>';
+  }
+
   const closeAxes = [aRes,bRes,cRes,dRes].filter(x=>x.close);
   if(closeAxes.length){
     const txt = closeAxes.map(x=>{
@@ -767,26 +805,37 @@ function calculateResult(){
     warn.innerHTML += `<div class="notice">${txt} 이 축의 문항을 다시 읽어보고 “내 생각에 더 가까운 쪽”으로 답했는지 확인해 보세요.</div>`;
   }
 
-  // 요소별 세부 성향(시각화) 렌더
   renderTraits([aRes,bRes,cRes,dRes]);
 
-  // 주제/사상가
   const ulI = document.getElementById('typeIssues'); ulI.innerHTML = '';
   data.issues.forEach(i => { const li=document.createElement('li'); li.textContent=i; ulI.appendChild(li); });
 
   const ulT = document.getElementById('typeThinkers'); ulT.innerHTML = '';
   data.thinkers.forEach(t => { const li=document.createElement('li'); li.textContent=t; ulT.appendChild(li); });
 
-  // 코드 설명 복사
   document.getElementById('codeExplain').innerHTML =
     document.querySelector('#page-main .code-box').innerHTML;
 
+  // ✅ 제출용 payload 저장
+  lastResultPayload = {
+    typeCode: code,
+    neutralRate: neutral/answers.length,
+    maxSameRate: maxSame/answers.length,
+    axis: {
+      A: { pick: aRes.pick, diff: aRes.diff, avgLeft: aRes.avg1, avgRight: aRes.avg2 },
+      B: { pick: bRes.pick, diff: bRes.diff, avgLeft: bRes.avg1, avgRight: bRes.avg2 },
+      C: { pick: cRes.pick, diff: cRes.diff, avgLeft: cRes.avg1, avgRight: cRes.avg2 },
+      D: { pick: dRes.pick, diff: dRes.diff, avgLeft: dRes.avg1, avgRight: dRes.avg2 }
+    }
+  };
+
   showPage('page-result');
 }
+
 document.getElementById('resultBtn').addEventListener('click', calculateResult);
 
 /* =========================
-   전체 유형 페이지 (모바일 반응형 카드)
+   전체 유형 페이지
 ========================= */
 const all = document.getElementById('allTypes');
 function renderAllTypes(){
