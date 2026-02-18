@@ -332,7 +332,7 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImO
 /* =========================
    ✅ 코드 버전 (여기만 올리면 화면에도 바로 표시됩니다)
 ========================= */
-const APP_VERSION = "v2.3.4";
+const APP_VERSION = "v2.3.5";
 
 /* ✅ 버전 표기 강제 갱신 */
 (function(){
@@ -723,6 +723,19 @@ function renderTraits(axisResults){
    - 여기서는 sendBeacon/no-cors 방식이 GAS와 제일 충돌이 적습니다.
 ========================= */
 let lastResultPayload = null;
+let isSubmitted = false;
+
+function askStudentId(){
+  const raw = prompt('학번을 입력하세요.(예시: 20300)');
+  if(raw === null) return null;
+  const studentId = raw.trim();
+
+  if(!/^\d{5}$/.test(studentId)){
+    alert('학번은 숫자 5자리로 입력해 주세요.');
+    return null;
+  }
+  return studentId;
+}
 
 function sendResultToGAS(payloadObj){
   const body = new URLSearchParams();
@@ -751,6 +764,7 @@ function buildSubmitPayload(){
   return {
     payload_version: 1,
     version: APP_VERSION,
+    student_id: null,
     code: lastResultPayload.typeCode,
     A_side: lastResultPayload.axis.A.pick, A_strength: lastResultPayload.axis.A.diff,
     B_side: lastResultPayload.axis.B.pick, B_strength: lastResultPayload.axis.B.diff,
@@ -767,8 +781,17 @@ function submitResult(){
     alert('먼저 "결과 확인"을 눌러 결과를 만든 뒤 제출해 주세요.');
     return;
   }
+  if(isSubmitted){
+    alert('이미 제출이 완료되었습니다.');
+    return;
+  }
+
+  const studentId = askStudentId();
+  if(!studentId) return;
 
   const payload = buildSubmitPayload();
+  payload.student_id = studentId;
+
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '전송 중...';
@@ -777,8 +800,9 @@ function submitResult(){
     const ok = sendResultToGAS(payload);
     if(!ok) throw new Error('sendBeacon failed');
 
-    btn.textContent = '완료';
-    setTimeout(()=>{ btn.textContent = originalText; btn.disabled = false; }, 800);
+    isSubmitted = true;
+    btn.textContent = '제출 완료';
+    alert('제출이 완료되었습니다.');
   }catch(err){
     console.error(err);
     alert('전송에 실패했습니다.');
