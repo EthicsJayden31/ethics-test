@@ -23,6 +23,7 @@
 
 - `index.html`: 애플리케이션 전체 소스
 - `README.md`: 본 문서
+- `apps-script/Code.gs`: Google Sheets 결과 수집용 Apps Script 코드
 
 ---
 
@@ -160,3 +161,88 @@ http://localhost:4173/index.html
 - 결과 내보내기(CSV/PDF) 기능
 - 관리자용 집계 대시보드 연동
 
+
+
+---
+
+## 10) Google Sheets + Apps Script 연동 방법
+
+이 프로젝트는 프런트엔드(`index.html`)에서 `GAS_WEBAPP_URL`로 결과를 전송합니다.
+학번(`student_id`)까지 저장하려면 아래 절차대로 Apps Script를 배포하세요.
+
+### 10-1. Apps Script 준비
+
+1. Google Sheets를 새로 만들거나 기존 수업용 시트를 엽니다.
+2. 상단 메뉴 **확장 프로그램 → Apps Script**를 클릭합니다.
+3. 이 저장소의 `apps-script/Code.gs` 내용을 복사해서 붙여넣고 저장합니다.
+
+### 10-2. 웹 앱 배포
+
+1. Apps Script 우측 상단 **배포 → 새 배포**를 선택합니다.
+2. 유형을 **웹 앱**으로 선택합니다.
+3. 실행 사용자: **나**
+4. 액세스 권한: **링크가 있는 모든 사용자**(또는 학교 정책에 맞는 범위)
+5. 배포 후 생성된 URL을 복사합니다.
+
+### 10-3. 프런트엔드 연결
+
+`index.html`의 아래 상수값을 배포 URL로 교체합니다.
+
+```js
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/.../exec";
+```
+
+### 10-4. 저장 컬럼(기본)
+
+`apps-script/Code.gs`는 `responses` 시트를 자동 생성하고 다음 컬럼을 기록합니다.
+
+- `timestamp`
+- `student_id` (숫자 5자리 검증)
+- `version`, `code`
+- `A_side`, `A_strength`
+- `B_side`, `B_strength`
+- `C_side`, `C_strength`
+- `D_side`, `D_strength`
+- `neutral_rate`, `max_same_rate`
+- `raw_json`
+
+### 10-5. 학번이 기록되지 않을 때 점검 항목
+
+1. `index.html`에서 제출 payload에 `student_id`가 포함되어 있는지 확인
+2. Apps Script가 최신 코드로 재배포되었는지 확인(수정 후 **새 버전 배포** 필요)
+3. 웹 앱 URL이 `index.html`의 `GAS_WEBAPP_URL`과 일치하는지 확인
+4. 시트 탭 이름이 `responses`인지 확인(코드에서 자동 생성됨)
+5. 제출 후 Apps Script 실행 로그(Executions)에서 에러 메시지 확인
+
+---
+
+## 11) GitHub Pages를 통한 수업 중 활용 방법
+
+### 11-1. 배포
+
+1. GitHub 저장소의 **Settings → Pages**로 이동
+2. Source를 `Deploy from a branch`로 설정
+3. 브랜치(예: `main`)와 루트(`/`)를 선택하고 저장
+4. 생성된 공개 URL(예: `https://<org>.github.io/<repo>/`)을 확인
+
+### 11-2. 수업 운영 권장 시나리오
+
+1. 교사는 수업 시작 전
+   - GitHub Pages URL 정상 접속 확인
+   - Apps Script/Sheets 수집 테스트 1회 수행
+2. 학생은 스마트폰/PC에서 URL 접속 후 검사 진행
+3. 결과 제출 시 학번 5자리를 입력해 제출
+4. 교사는 Google Sheets에서 실시간으로 응답 수집 상태 확인
+
+### 11-3. 안정적인 수업 운영 팁
+
+- 수업 전날에 사전 리허설(학교 와이파이/모바일망 모두 테스트)
+- URL은 단축 링크 또는 QR 코드로 제공
+- 동시 접속이 많으면 제출 직후 1~2초 대기 안내
+- 비상용으로 오프라인 수기 기록(학번, 유형 코드) 양식 준비
+
+### 11-4. 개인정보/보안 주의
+
+- 학번은 개인정보로 간주되므로 학교 지침에 따라 수집·보관·파기 정책을 명확히 하세요.
+- 공개 저장소에 실제 수집 데이터나 민감한 운영 URL을 직접 커밋하지 마세요.
+- 필요 시 Apps Script에서 허용 도메인/토큰 검증을 추가해 무단 제출을 줄일 수 있습니다.
