@@ -10,6 +10,9 @@
 
 const SHEET_NAME = 'responses';
 const REQUIRED_HEADERS = [
+  'server_timestamp',
+  'app_version',
+  'type_code',
   'timestamp',
   'student_id',
   'Students_id',
@@ -95,21 +98,24 @@ function normalizePayload_(p) {
   }
 
   return {
+    server_timestamp: safeStr_(p.server_timestamp) || new Date().toISOString(),
+    app_version: safeStr_(p.app_version) || safeStr_(p.version),
+    type_code: safeStr_(p.type_code) || safeStr_(p.code),
     timestamp: new Date(),
     student_id: studentId,
     Students_id: studentId,
-    version: safeStr_(p.version),
-    code: safeStr_(p.code),
+    version: safeStr_(p.version) || safeStr_(p.app_version),
+    code: safeStr_(p.code) || safeStr_(p.type_code),
     A_side: safeStr_(p.A_side),
-    A_strength: safeNum_(p.A_strength),
+    A_strength: safeNum_(pickAny_(p, ['A_strength', 'a_strength'])),
     B_side: safeStr_(p.B_side),
-    B_strength: safeNum_(p.B_strength),
+    B_strength: safeNum_(pickAny_(p, ['B_strength', 'b_strength'])),
     C_side: safeStr_(p.C_side),
-    C_strength: safeNum_(p.C_strength),
+    C_strength: safeNum_(pickAny_(p, ['C_strength', 'c_strength'])),
     D_side: safeStr_(p.D_side),
-    D_strength: safeNum_(p.D_strength),
-    neutral_rate: safeNum_(p.neutral_rate),
-    max_same_rate: safeNum_(p.max_same_rate),
+    D_strength: safeNum_(pickAny_(p, ['D_strength', 'd_strength'])),
+    neutral_rate: safeNum_(pickAny_(p, ['neutral_rate', 'neutralRate'])),
+    max_same_rate: safeNum_(pickAny_(p, ['max_same_rate', 'maxSameRate'])),
     raw_json: JSON.stringify(p)
   };
 }
@@ -171,6 +177,16 @@ function parseJsonSafe_(text, errMsg) {
   } catch (err) {
     throw new Error(errMsg + ': ' + err.message);
   }
+}
+
+function pickAny_(obj, keys) {
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    if (obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
+      return obj[key];
+    }
+  }
+  return '';
 }
 
 function safeStr_(v) {

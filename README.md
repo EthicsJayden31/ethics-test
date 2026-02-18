@@ -218,6 +218,8 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/.../exec";
 5. 시트 탭 이름이 `responses`인지 확인(코드에서 자동 생성됨)
 6. 제출 후 Apps Script 실행 로그(Executions)에서 에러 메시지 확인
 
+> 현재 시트 헤더가 `server_timestamp`, `app_version`, `type_code` 형태의 기존 양식이어도 최신 `Code.gs`는 해당 헤더를 유지하면서 `student_id`/`Students_id` 컬럼을 자동 보강해 함께 기록합니다.
+
 ---
 
 ## 11) GitHub Pages를 통한 수업 중 활용 방법

@@ -737,6 +737,10 @@ function askStudentId(){
 function sendResultToGAS(payloadObj){
   const body = new URLSearchParams();
   body.set("payload", JSON.stringify(payloadObj));
+  // Apps Script 구현별 호환성을 위해 개별 필드도 함께 전달
+  Object.entries(payloadObj).forEach(([k, v]) => {
+    body.set(k, v == null ? '' : String(v));
+  });
 
   if (navigator.sendBeacon) {
     const ok = navigator.sendBeacon(
@@ -760,9 +764,13 @@ function buildSubmitPayload(){
   if(!lastResultPayload) return null;
   return {
     payload_version: 1,
+    server_timestamp: new Date().toISOString(),
     version: APP_VERSION,
+    app_version: APP_VERSION,
     student_id: null,
+    Students_id: null,
     code: lastResultPayload.typeCode,
+    type_code: lastResultPayload.typeCode,
     A_side: lastResultPayload.axis.A.pick, A_strength: lastResultPayload.axis.A.diff,
     B_side: lastResultPayload.axis.B.pick, B_strength: lastResultPayload.axis.B.diff,
     C_side: lastResultPayload.axis.C.pick, C_strength: lastResultPayload.axis.C.diff,
@@ -788,6 +796,7 @@ function submitResult(){
 
   const payload = buildSubmitPayload();
   payload.student_id = studentId;
+  payload.Students_id = studentId;
 
   btn.disabled = true;
   const originalText = btn.textContent;
