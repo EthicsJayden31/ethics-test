@@ -76,6 +76,18 @@
     grid-template-columns: 1fr;
     gap: 10px;
   }
+  .result-section{
+    margin-top:16px;
+    padding:14px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:#fcfcff;
+  }
+  .result-section h3{
+    margin:0 0 8px;
+    text-align:left;
+  }
+  .result-section ul{margin:0 0 0 18px}
 
   /* 요소별 세부 성향(시각화) */
   .trait-grid{
@@ -271,14 +283,20 @@
       </div>
     </div>
 
-    <h3>관심 있어할 만한 주제</h3>
-    <ul id="typeIssues"></ul>
+    <div class="result-section">
+      <h3>관심 있어할 만한 주제</h3>
+      <ul id="typeIssues"></ul>
+    </div>
 
-    <h3>이 유형과 가까운 윤리 사상가</h3>
-    <ul id="typeThinkers"></ul>
+    <div class="result-section">
+      <h3>이 유형과 가까운 윤리 사상가</h3>
+      <ul id="typeThinkers"></ul>
+    </div>
 
-    <h3>윤리 성향 코드 다시 보기</h3>
-    <div class="code-box" id="codeExplain"></div>
+    <div class="result-section">
+      <h3>윤리 성향 코드 다시 보기</h3>
+      <div class="code-box" id="codeExplain"></div>
+    </div>
 
     <div class="btnrow">
       <button onclick="location.reload()">다시 검사하기</button>
@@ -314,13 +332,12 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImO
 /* =========================
    ✅ 코드 버전 (여기만 올리면 화면에도 바로 표시됩니다)
 ========================= */
-const APP_VERSION = "v2.3.2 (fix: version display + result button enable)";
+const APP_VERSION = "v2.3.6";
 
 /* ✅ 버전 표기 강제 갱신 */
 (function(){
   const vEl = document.getElementById("versionTag");
-  const cacheHint = `${location.pathname}?v=${encodeURIComponent(APP_VERSION)}`;
-  vEl.textContent = `${APP_VERSION} · 캐시 확인용: ${cacheHint}`;
+  vEl.textContent = APP_VERSION;
 })();
 
 /* =========================
@@ -376,6 +393,16 @@ const questions=[
   {t:'문제는 제도 안에서 차근차근 해결하는 것이 좋다고 생각한다.', axis:'D', pole:'S'},
   {t:'너무 급하게 바꾸면 더 큰 문제가 생길 수 있다고 생각한다.', axis:'D', pole:'S'}
 ];
+
+function shuffleInPlace(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+// 설문은 페이지 로드 시 한 번만 무작위 순서로 섞습니다.
+shuffleInPlace(questions);
 
 /* =========================
    16유형 DB (원문 그대로)
@@ -533,10 +560,7 @@ function setAnswerAndRefresh(value){
 function renderQuestion(){
   const q = questions[currentIndex];
   progressEl.textContent = `진행: ${currentIndex+1} / ${questions.length}`;
-  const axisLabel = (q.axis==='A') ? 'A(결과/원칙)' :
-                    (q.axis==='B') ? 'B(개인/공동체)' :
-                    (q.axis==='C') ? 'C(인간/환경·생명)' : 'D(행동/안정)';
-  qMetaEl.textContent = `영역: ${axisLabel}  ·  척도: 1(매우 그렇지 않다) ~ 7(매우 그렇다)`;
+  qMetaEl.textContent = '척도: 1(매우 그렇지 않다) ~ 7(매우 그렇다)';
   qTextEl.textContent = `${currentIndex+1}. ${q.t}`;
 
   qOptionsEl.innerHTML = '';
@@ -630,7 +654,7 @@ function calcAxis(axisKey){
 
 /* =========================
    요소별 세부 성향 시각화
-   ✅ 현재 코드 기준(diff>0 => 왼쪽(p1) 쪽) 이므로 markerPos는 50 + diff*k
+   ✅ diff>0 이면 왼쪽(p1) 쪽으로 이동해야 하므로 markerPos는 50 - diff*k
 ========================= */
 const axisMeta = {
   A:{title:'판단 기준', left:'R(결과)', right:'P(원칙)'},
@@ -641,7 +665,7 @@ const axisMeta = {
 
 function markerPosFromDiff(diff){
   const k = 12.5;
-  const pos = 50 + diff * k;
+  const pos = 50 - diff * k;
   return Math.max(6, Math.min(94, pos));
 }
 function closenessTag(diff){
@@ -696,10 +720,27 @@ function renderTraits(axisResults){
    - 여기서는 sendBeacon/no-cors 방식이 GAS와 제일 충돌이 적습니다.
 ========================= */
 let lastResultPayload = null;
+let isSubmitted = false;
+
+function askStudentId(){
+  const raw = prompt('학번을 입력하세요.(예시: 20300)');
+  if(raw === null) return null;
+  const studentId = raw.trim();
+
+  if(!/^\d{5}$/.test(studentId)){
+    alert('학번은 숫자 5자리로 입력해 주세요.');
+    return null;
+  }
+  return studentId;
+}
 
 function sendResultToGAS(payloadObj){
   const body = new URLSearchParams();
   body.set("payload", JSON.stringify(payloadObj));
+  // Apps Script 구현별 호환성을 위해 개별 필드도 함께 전달
+  Object.entries(payloadObj).forEach(([k, v]) => {
+    body.set(k, v == null ? '' : String(v));
+  });
 
   if (navigator.sendBeacon) {
     const ok = navigator.sendBeacon(
@@ -723,8 +764,13 @@ function buildSubmitPayload(){
   if(!lastResultPayload) return null;
   return {
     payload_version: 1,
+    server_timestamp: new Date().toISOString(),
     version: APP_VERSION,
+    app_version: APP_VERSION,
+    student_id: null,
+    Students_id: null,
     code: lastResultPayload.typeCode,
+    type_code: lastResultPayload.typeCode,
     A_side: lastResultPayload.axis.A.pick, A_strength: lastResultPayload.axis.A.diff,
     B_side: lastResultPayload.axis.B.pick, B_strength: lastResultPayload.axis.B.diff,
     C_side: lastResultPayload.axis.C.pick, C_strength: lastResultPayload.axis.C.diff,
@@ -740,8 +786,18 @@ function submitResult(){
     alert('먼저 "결과 확인"을 눌러 결과를 만든 뒤 제출해 주세요.');
     return;
   }
+  if(isSubmitted){
+    alert('이미 제출이 완료되었습니다.');
+    return;
+  }
+
+  const studentId = askStudentId();
+  if(!studentId) return;
 
   const payload = buildSubmitPayload();
+  payload.student_id = studentId;
+  payload.Students_id = studentId;
+
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '전송 중...';
@@ -750,8 +806,9 @@ function submitResult(){
     const ok = sendResultToGAS(payload);
     if(!ok) throw new Error('sendBeacon failed');
 
-    btn.textContent = '완료';
-    setTimeout(()=>{ btn.textContent = originalText; btn.disabled = false; }, 800);
+    isSubmitted = true;
+    btn.textContent = '제출 완료';
+    alert('제출이 완료되었습니다.');
   }catch(err){
     console.error(err);
     alert('전송에 실패했습니다.');
