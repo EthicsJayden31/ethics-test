@@ -332,7 +332,7 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCxn82yvg3OdImO
 /* =========================
    ✅ 코드 버전 (여기만 올리면 화면에도 바로 표시됩니다)
 ========================= */
-const APP_VERSION = "v2.3.5";
+const APP_VERSION = "v2.3.6";
 
 /* ✅ 버전 표기 강제 갱신 */
 (function(){
@@ -560,10 +560,7 @@ function setAnswerAndRefresh(value){
 function renderQuestion(){
   const q = questions[currentIndex];
   progressEl.textContent = `진행: ${currentIndex+1} / ${questions.length}`;
-  const axisLabel = (q.axis==='A') ? 'A(결과/원칙)' :
-                    (q.axis==='B') ? 'B(개인/공동체)' :
-                    (q.axis==='C') ? 'C(인간/환경·생명)' : 'D(행동/안정)';
-  qMetaEl.textContent = `영역: ${axisLabel}  ·  척도: 1(매우 그렇지 않다) ~ 7(매우 그렇다)`;
+  qMetaEl.textContent = '척도: 1(매우 그렇지 않다) ~ 7(매우 그렇다)';
   qTextEl.textContent = `${currentIndex+1}. ${q.t}`;
 
   qOptionsEl.innerHTML = '';

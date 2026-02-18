@@ -14,6 +14,7 @@
   - 결과 유형 코드 + 설명 + 관심 주제 + 관련 사상가 제공
   - 요소별 세부 성향 시각화(축별 바/마커)
   - 결과 제출 시 학번(숫자 5자리) 검증 후 전송
+  - Apps Script에서 `student_id`/`Students_id` 컬럼 동시 기록 지원
 
 ---
 
@@ -24,6 +25,8 @@
 - `index.html`: 애플리케이션 전체 소스
 - `README.md`: 본 문서
 - `apps-script/Code.gs`: Google Sheets 결과 수집용 Apps Script 코드
+
+> 정리: 현재 저장소는 운영에 필요한 파일(`index.html`, `README.md`, `apps-script/Code.gs`)만 유지하도록 정리했습니다.
 
 ---
 
@@ -197,7 +200,7 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/.../exec";
 `apps-script/Code.gs`는 `responses` 시트를 자동 생성하고 다음 컬럼을 기록합니다.
 
 - `timestamp`
-- `student_id` (숫자 5자리 검증)
+- `student_id`, `Students_id` (둘 다 동일 값으로 기록, 숫자 5자리 검증)
 - `version`, `code`
 - `A_side`, `A_strength`
 - `B_side`, `B_strength`
@@ -211,8 +214,9 @@ const GAS_WEBAPP_URL = "https://script.google.com/macros/s/.../exec";
 1. `index.html`에서 제출 payload에 `student_id`가 포함되어 있는지 확인
 2. Apps Script가 최신 코드로 재배포되었는지 확인(수정 후 **새 버전 배포** 필요)
 3. 웹 앱 URL이 `index.html`의 `GAS_WEBAPP_URL`과 일치하는지 확인
-4. 시트 탭 이름이 `responses`인지 확인(코드에서 자동 생성됨)
-5. 제출 후 Apps Script 실행 로그(Executions)에서 에러 메시지 확인
+4. 시트에 `Students_id` 컬럼만 있는 기존 양식이라도 최신 코드가 자동으로 `student_id`/`Students_id`를 보강하는지 확인
+5. 시트 탭 이름이 `responses`인지 확인(코드에서 자동 생성됨)
+6. 제출 후 Apps Script 실행 로그(Executions)에서 에러 메시지 확인
 
 ---
 

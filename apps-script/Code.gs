@@ -5,9 +5,28 @@
  * 1) application/x-www-form-urlencoded with key "payload" containing JSON string
  *    payload={"student_id":"20300", ...}
  * 2) raw JSON body
+ * 3) form/querystring fields directly (student_id=20300&code=...)
  */
 
 const SHEET_NAME = 'responses';
+const REQUIRED_HEADERS = [
+  'timestamp',
+  'student_id',
+  'Students_id',
+  'version',
+  'code',
+  'A_side',
+  'A_strength',
+  'B_side',
+  'B_strength',
+  'C_side',
+  'C_strength',
+  'D_side',
+  'D_strength',
+  'neutral_rate',
+  'max_same_rate',
+  'raw_json'
+];
 
 function doPost(e) {
   try {
@@ -34,6 +53,11 @@ function parsePayload_(e) {
     return parseJsonSafe_(e.parameter.payload, 'payload 파라미터 JSON 파싱 실패');
   }
 
+  // 1-1) Direct form field fallback
+  if (e.parameter && (e.parameter.student_id || e.parameter.Students_id)) {
+    return e.parameter;
+  }
+
   // 2) POST body fallback (JSON or querystring-like)
   const raw = e.postData && e.postData.contents ? e.postData.contents : '';
   if (!raw) throw new Error('payload가 비어 있습니다.');
@@ -43,10 +67,14 @@ function parsePayload_(e) {
     return parseJsonSafe_(raw, '본문(JSON) 파싱 실패');
   }
 
-  // querystring style (payload=...)
+  // querystring style (payload=... or direct fields)
   const map = parseQueryString_(raw);
   if (map.payload) {
     return parseJsonSafe_(map.payload, '본문 payload(JSON) 파싱 실패');
+  }
+
+  if (map.student_id || map.Students_id) {
+    return map;
   }
 
   throw new Error('지원하지 않는 payload 형식입니다.');
@@ -55,14 +83,21 @@ function parsePayload_(e) {
 function normalizePayload_(p) {
   if (!p || typeof p !== 'object') throw new Error('payload 객체가 아닙니다.');
 
-  const studentId = String(p.student_id || '').trim();
+  // Handle nested payload pattern: { payload: {...} }
+  if (p.payload && typeof p.payload === 'object') {
+    p = p.payload;
+  }
+
+  const studentIdRaw = p.student_id || p.Students_id || p.students_id || p.STUDENT_ID;
+  const studentId = String(studentIdRaw || '').trim();
   if (!/^\d{5}$/.test(studentId)) {
-    throw new Error('student_id는 숫자 5자리여야 합니다.');
+    throw new Error('student_id(Students_id)는 숫자 5자리여야 합니다.');
   }
 
   return {
     timestamp: new Date(),
     student_id: studentId,
+    Students_id: studentId,
     version: safeStr_(p.version),
     code: safeStr_(p.code),
     A_side: safeStr_(p.A_side),
@@ -86,47 +121,34 @@ function appendRow_(d) {
     sheet = ss.insertSheet(SHEET_NAME);
   }
 
-  ensureHeader_(sheet);
+  const headers = ensureColumns_(sheet, REQUIRED_HEADERS);
+  const row = headers.map(function (h) {
+    return d[h] !== undefined ? d[h] : '';
+  });
 
-  sheet.appendRow([
-    d.timestamp,
-    d.student_id,
-    d.version,
-    d.code,
-    d.A_side,
-    d.A_strength,
-    d.B_side,
-    d.B_strength,
-    d.C_side,
-    d.C_strength,
-    d.D_side,
-    d.D_strength,
-    d.neutral_rate,
-    d.max_same_rate,
-    d.raw_json
-  ]);
+  sheet.appendRow(row);
 }
 
-function ensureHeader_(sheet) {
-  if (sheet.getLastRow() > 0) return;
+function ensureColumns_(sheet, requiredHeaders) {
+  const firstRowRange = sheet.getRange(1, 1, 1, Math.max(1, sheet.getMaxColumns()));
+  const firstRowValues = firstRowRange.getValues()[0];
+  let headers = firstRowValues.map(function (v) { return String(v || '').trim(); });
 
-  sheet.getRange(1, 1, 1, 15).setValues([[
-    'timestamp',
-    'student_id',
-    'version',
-    'code',
-    'A_side',
-    'A_strength',
-    'B_side',
-    'B_strength',
-    'C_side',
-    'C_strength',
-    'D_side',
-    'D_strength',
-    'neutral_rate',
-    'max_same_rate',
-    'raw_json'
-  ]]);
+  const hasAnyHeader = headers.some(function (h) { return h !== ''; });
+  if (!hasAnyHeader) {
+    headers = requiredHeaders.slice();
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return headers;
+  }
+
+  requiredHeaders.forEach(function (h) {
+    if (headers.indexOf(h) === -1) {
+      headers.push(h);
+      sheet.getRange(1, headers.length).setValue(h);
+    }
+  });
+
+  return headers;
 }
 
 function parseQueryString_(qs) {
